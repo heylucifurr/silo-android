@@ -3,6 +3,7 @@ package org.siloserver.silo.common.network
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.os.Build
+import android.provider.Settings
 import org.siloserver.silo.network.SiloDeviceMetadata
 import org.siloserver.silo.network.DeviceMetadataProvider
 import java.util.UUID
@@ -48,12 +49,32 @@ class AndroidDeviceMetadataProvider(
         )
     }
 
-    private fun clientNameFor(platform: String): String =
-        when (platform) {
-            "android-tv" -> "Silo Android TV"
-            "android" -> "Silo Android"
-            else -> "Silo Android"
-        }
+    /**
+     * `X-Silo-Client`: the client, then the device, the way the Apple clients
+     * report it ("weflix iPhone"). Admin renders this beside the version, so a
+     * household with two identical models can still tell its rows apart.
+     *
+     * The name is resolved once per process with the rest of the client
+     * identity, so a rename in system settings reaches admin on the next
+     * launch rather than on the next request.
+     */
+    private fun clientNameFor(platform: String): String {
+        val device = userDeviceName()
+            ?: Build.MODEL?.trim()?.ifBlank { null }
+            ?: if (platform == "android-tv") "Android TV" else "Android"
+        return "weflix $device"
+    }
+
+    /**
+     * The name the person gave this device in system settings. Device name
+     * arrived in API 25; older devices answer with their model instead.
+     */
+    private fun userDeviceName(): String? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return null
+        return runCatching {
+            Settings.Global.getString(context.contentResolver, Settings.Global.DEVICE_NAME)
+        }.getOrNull()?.trim()?.ifBlank { null }
+    }
 
     /**
      * Closed `X-Silo-Client-Family` identity for `profile_client`-scoped
