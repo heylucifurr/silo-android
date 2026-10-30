@@ -335,7 +335,7 @@ private fun AddressEntry(
         accessory = { TvMarqueeStatusChip(rememberTvName(), icon = Icons.Outlined.Tv) },
         copy = {
             TvMarqueeHeadline("Enter your\nserver address")
-            TvMarqueeBody("Type the address you use for Silo.", modifier = Modifier.padding(top = 11.dp))
+            TvMarqueeBody("Type the address you use for weflix.", modifier = Modifier.padding(top = 11.dp))
             Box(Modifier.width(380.dp).padding(top = 20.dp).tvImeAwareFieldContext()) {
                 TvMarqueeField(
                     value = state.serverUrl,
@@ -399,7 +399,7 @@ private fun AddressEntry(
             state.discoveryError?.let { TvMarqueeErrorText(it, Modifier.width(380.dp).padding(top = 8.dp)) }
         },
         card = {
-            TvUsePhoneCard("Open Silo on a phone or tablet on the same Wi‑Fi and tap Set up. It finishes this for you.")
+            TvUsePhoneCard("Open weflix on a phone or tablet on the same Wi‑Fi and tap Set up. It finishes this for you.")
         },
     )
 }

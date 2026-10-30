@@ -57,7 +57,7 @@ import org.siloserver.silo.network.ServerRegistry
  *
  * Rokus (silo-roku `docs/silocontrol.md` section 4.4) list beside the other
  * TVs. A phone cannot open the Roku app, so a remembered Roku that discovery
- * doesn't find gets "Open Silo on your Roku". Scanning a Roku's pairing code
+ * doesn't find gets "Open Weflix on your Roku". Scanning a Roku's pairing code
  * with the camera adds one on networks that block multicast.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -130,7 +130,7 @@ fun SiloCastTargetPickerSheet(
                     modifier = Modifier.align(Alignment.CenterStart),
                 ) { Text("Done") }
                 Text(
-                    if (launchRequest == null) "Remote Control" else "Play on Silo TV",
+                    if (launchRequest == null) "Remote Control" else "Play on Weflix TV",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.align(Alignment.Center),
@@ -171,11 +171,11 @@ fun SiloCastTargetPickerSheet(
                             modifier = Modifier.size(36.dp),
                         )
                         Text(
-                            "No Silo TVs Found",
+                            "No Weflix TVs Found",
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            "Foreground Silo TVs on this network appear here.",
+                            "Foreground Weflix TVs on this network appear here.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -192,7 +192,7 @@ fun SiloCastTargetPickerSheet(
                     ) {
                         CircularProgressIndicator()
                         Text(
-                            "Searching for Silo TVs…",
+                            "Searching for Weflix TVs…",
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -206,7 +206,7 @@ fun SiloCastTargetPickerSheet(
             }
             missingRoku?.let { roku ->
                 Text(
-                    "${roku.name} isn't showing up. Open Silo on your Roku.",
+                    "${roku.name} isn't showing up. Open Weflix on your Roku.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
@@ -277,7 +277,7 @@ private fun TargetRow(
             )
             val subtitle: Pair<String, androidx.compose.ui.graphics.Color>? = when {
                 needsUpdate ->
-                    "Update Silo on this TV to use your profile" to MaterialTheme.colorScheme.onSurfaceVariant
+                    "Update Weflix on this TV to use your profile" to MaterialTheme.colorScheme.onSurfaceVariant
                 rokuOnOtherServer ->
                     "Plays from ${target.serverName ?: "another server"}" to MaterialTheme.colorScheme.onSurfaceVariant
                 needsPairing ->

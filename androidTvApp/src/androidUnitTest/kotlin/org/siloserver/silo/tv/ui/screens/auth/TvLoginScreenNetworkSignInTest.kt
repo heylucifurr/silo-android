@@ -119,10 +119,11 @@ class TvLoginScreenNetworkSignInTest {
         composeRule.onAllNodes(TEXT_FIELD).assertCountEquals(2).assertAll(isNotEnabled())
         composeRule.onNodeWithText(SIGN_IN).assertIsNotEnabled()
 
+        // This build has no "Change server", and this form offers no phone
+        // fallback, so the secondary row is empty: the D-pad has nowhere to go
+        // and focus stays on the waiting button.
+        composeRule.onNodeWithText(CHANGE_SERVER).assertDoesNotExist()
         composeRule.onNodeWithText(SIGNING_IN).performKeyInput { pressKey(Key.DirectionDown) }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText(CHANGE_SERVER).assertIsFocused()
-        composeRule.onNodeWithText(CHANGE_SERVER).performKeyInput { pressKey(Key.DirectionUp) }
         composeRule.waitForIdle()
         composeRule.onNodeWithText(SIGNING_IN).assertIsFocused()
     }

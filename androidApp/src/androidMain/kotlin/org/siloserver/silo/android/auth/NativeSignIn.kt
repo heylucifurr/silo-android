@@ -18,7 +18,7 @@ import org.siloserver.silo.network.canonicalHttpOrigin
  * "Native apps"): the app opens the provider's native start in the system
  * browser with a PKCE S256 challenge and a random `app_state`; the server
  * returns the browser to the fixed app redirect
- * `org.siloserver.silo:/auth/callback?code=&state=&server=&iss=` (or
+ * `me.weflix:/auth/callback?code=&state=&server=&iss=` (or
  * `error=`), and the app redeems the code with its verifier. Codes, verifiers
  * and tokens are never logged.
  *
@@ -33,7 +33,18 @@ import org.siloserver.silo.network.canonicalHttpOrigin
  * names its own origin.
  */
 object NativeSignInProtocol {
-    const val CALLBACK_SCHEME = "org.siloserver.silo"
+    const val CALLBACK_SCHEME = "me.weflix"
+
+    /**
+     * The pre-rebrand redirect scheme (the old applicationId). A server whose
+     * OAuth client was registered before the rebrand still redirects here, so
+     * it stays accepted until the server's redirect URI is updated.
+     */
+    const val LEGACY_CALLBACK_SCHEME = "org.siloserver.silo"
+
+    /** Every redirect scheme accepted, current first. */
+    val CALLBACK_SCHEMES = setOf(CALLBACK_SCHEME, LEGACY_CALLBACK_SCHEME)
+
     const val CALLBACK_PATH = "/auth/callback"
 
     /** `prompt` value asking the provider to let the person pick another account. */
@@ -172,13 +183,14 @@ data class NativeSignInCallback(
 
     companion object {
         /**
-         * Null unless [uri] is exactly `org.siloserver.silo:/auth/callback`
-         * with a query: another path, a host, or user info is not ours.
+         * Null unless [uri] is exactly `me.weflix:/auth/callback` (or the
+         * legacy `org.siloserver.silo:/auth/callback`) with a query: another
+         * path, a host, or user info is not ours.
          */
         fun parse(uri: String?): NativeSignInCallback? {
             if (uri.isNullOrBlank()) return null
             val parsed = runCatching { URI(uri) }.getOrNull() ?: return null
-            if (!parsed.scheme.equals(NativeSignInProtocol.CALLBACK_SCHEME, ignoreCase = true)) return null
+            if (parsed.scheme?.lowercase() !in NativeSignInProtocol.CALLBACK_SCHEMES) return null
             if (parsed.isOpaque || parsed.rawAuthority != null) return null
             if (parsed.rawPath != NativeSignInProtocol.CALLBACK_PATH) return null
             val query = parsed.rawQuery ?: return null

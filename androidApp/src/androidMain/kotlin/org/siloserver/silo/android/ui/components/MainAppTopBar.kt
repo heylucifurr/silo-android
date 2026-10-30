@@ -41,11 +41,10 @@ fun MainAppTopBar(
     isProfileLoading: Boolean,
     hazeState: HazeState,
     onSearchClick: () -> Unit,
-    onRequestsClick: (() -> Unit)? = null,
+    onCalendarClick: (() -> Unit)? = null,
     onWatchPartyClick: (() -> Unit)?,
     onSettingsClick: () -> Unit,
     onSwitchProfileClick: () -> Unit,
-    onSwitchServerClick: () -> Unit,
     onSignOutClick: () -> Unit,
     leadingContent: @Composable () -> Unit = {
         SiloWordmark()
@@ -79,11 +78,10 @@ fun MainAppTopBar(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 activeProfile = activeProfile,
                 onSearchClick = onSearchClick,
-                onRequestsClick = onRequestsClick,
+                onCalendarClick = onCalendarClick,
                 onWatchPartyClick = onWatchPartyClick,
                 onSettingsClick = onSettingsClick,
                 onSwitchProfileClick = onSwitchProfileClick,
-                onSwitchServerClick = onSwitchServerClick,
                 onSignOutClick = onSignOutClick,
             )
         }
@@ -106,7 +104,7 @@ fun SiloWordmark(
 ) {
     androidx.compose.foundation.Image(
         painter = painterResource(id = R.drawable.silo_wordmark),
-        contentDescription = "Silo",
+        contentDescription = "weflix",
         contentScale = ContentScale.Fit,
         modifier = modifier
             .width(width)

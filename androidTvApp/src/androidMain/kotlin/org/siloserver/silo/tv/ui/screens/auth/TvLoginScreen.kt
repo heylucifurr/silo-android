@@ -117,7 +117,6 @@ import org.siloserver.silo.tv.ui.focus.requestFocusUntilObserved
 fun TvLoginScreen(
     onLoginSuccess: () -> Unit,
     onCreateAccount: () -> Unit = {},
-    onChangeServer: () -> Unit = {},
     signupEnabled: Boolean = false,
     sessionExpired: Boolean = false,
     viewModel: TvLoginViewModel = koinViewModel(parameters = { parametersOf(sessionExpired) }),
@@ -131,12 +130,10 @@ fun TvLoginScreen(
     val usernameFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
     val usePasswordFocus = remember { FocusRequester() }
-    val changeServerFocus = remember { FocusRequester() }
     val actionFocus = remember { FocusRequester() }
     val signInFocus = remember { FocusRequester() }
     val createAccountFocus = remember { FocusRequester() }
     val backToPhoneFocus = remember { FocusRequester() }
-    val formChangeServerFocus = remember { FocusRequester() }
     val networkFocus = remember { FocusRequester() }
     val formScrollState = rememberTvImeAwareFormScrollState()
 
@@ -231,18 +228,22 @@ fun TvLoginScreen(
         (state.networkError == null || !device.status.actionTakesFocus())
 
     // After "Continue as …", focus moves to the state's action when the code
-    // needs the person ("Try again" / "Show a new code"), to "Change server"
-    // when only that helps, otherwise to the one local action, "Sign in with a
-    // password". "Can't reach" and "Too many requests" keep retrying by
-    // themselves, so their "Try again" doesn't take focus (Apple TV parity).
+    // needs the person ("Try again" / "Show a new code"), otherwise to the one
+    // local action, "Sign in with a password". "Can't reach" and "Too many
+    // requests" keep retrying by themselves, so their "Try again" doesn't take
+    // focus (Apple TV parity).
+    //
+    // This build has no "Change server" control, so a state that offers nothing
+    // else claims nothing rather than pointing at a missing button.
     val focusTarget = when {
         passwordFormVisible -> if (networkInForm && networkLeads) networkKey else "username"
         networkLeads -> networkKey
         device.status.actionTakesFocus() -> "action"
-        device.status == TvSignInStatus.UpdateRequired -> "changeServer"
+        // An update requirement hides the password button: no password can help.
+        device.status == TvSignInStatus.UpdateRequired -> null
         device.status == TvSignInStatus.Unreachable || device.status == TvSignInStatus.TooManyRequests -> null
         state.passwordAvailable -> "usePassword"
-        else -> "changeServer"
+        else -> null
     }
     // Which claim target holds focus. Checking "the screen has focus" is not
     // enough: after a state change focus is still on the old button, and the
@@ -266,7 +267,6 @@ fun TvLoginScreen(
             "username" -> usernameFocus
             "network", "formNetwork" -> networkFocus
             "action" -> actionFocus
-            "changeServer" -> changeServerFocus
             else -> usePasswordFocus
         }
         TvFocusLog.d { "login: claiming $focusTarget (mode=$inputMode)" }
@@ -279,10 +279,6 @@ fun TvLoginScreen(
         TvFocusLog.d { "login: claim result=$result" }
     }
 
-    val changeServer = {
-        viewModel.onChangeServer()
-        onChangeServer()
-    }
     val serverName = state.serverName ?: state.serverHost.orEmpty()
     val network = state.networkProvider?.let { provider ->
         NetworkSignInAction(
@@ -360,14 +356,12 @@ fun TvLoginScreen(
                 signInFocus = signInFocus,
                 createAccountFocus = createAccountFocus,
                 backToPhoneFocus = backToPhoneFocus,
-                changeServerFocus = formChangeServerFocus,
                 onUsernameChanged = viewModel::onUsernameChanged,
                 onPasswordChanged = viewModel::onPasswordChanged,
                 onLoginClick = viewModel::onLoginClick,
                 signupEnabled = signupEnabled,
                 onCreateAccount = onCreateAccount,
                 onBackToPhone = backToPhone,
-                onChangeServer = changeServer,
                 network = network.takeIf { networkInForm },
             )
 
@@ -375,17 +369,7 @@ fun TvLoginScreen(
                 copy = {
                     notices()
                     TvMarqueeHeadline(stringResource(R.string.tv_signin_title, displayName), Modifier.padding(top = 22.dp))
-                    network?.let { NetworkSignInButton(it, below = changeServerFocus, modifier = Modifier.padding(top = 20.dp)) }
-                    TvMarqueeButton(
-                        text = stringResource(R.string.tv_signin_action_change_server),
-                        onClick = changeServer,
-                        kind = TvMarqueeButtonKind.Plain,
-                        focusRequester = changeServerFocus,
-                        modifier = Modifier
-                            .padding(top = 15.dp)
-                            .then(trackFocus("changeServer"))
-                            .focusProperties { network?.let { up = it.focusRequester } },
-                    )
+                    network?.let { NetworkSignInButton(it, modifier = Modifier.padding(top = 20.dp)) }
                 },
                 card = {
                     TvMarqueeCard {
@@ -416,7 +400,7 @@ fun TvLoginScreen(
                         NetworkSignInButton(
                             action = network,
                             // The copy between holds nothing focusable: name the way down.
-                            below = codeActionBelowNetwork(device.status, state.passwordAvailable, actionFocus, usePasswordFocus, changeServerFocus),
+                            below = codeActionBelowNetwork(device.status, state.passwordAvailable, actionFocus, usePasswordFocus),
                             modifier = Modifier.padding(top = 16.dp),
                         )
                         Text(
@@ -450,13 +434,10 @@ fun TvLoginScreen(
                         actionTracking = trackFocus("action"),
                         usePasswordFocus = usePasswordFocus,
                         usePasswordTracking = trackFocus("usePassword"),
-                        changeServerFocus = changeServerFocus,
-                        changeServerTracking = trackFocus("changeServer"),
                         onAction = viewModel::restartDeviceLogin,
                         // The form would hide "Signing in…" while "Continue as …"
                         // waits, and its Sign in would do nothing until then.
                         onUsePassword = { if (!state.networkBusy) showPasswordForm = true },
-                        onChangeServer = changeServer,
                         modifier = Modifier.padding(top = 24.dp),
                     )
                 },
@@ -472,11 +453,10 @@ private fun codeActionBelowNetwork(
     passwordAvailable: Boolean,
     actionFocus: FocusRequester,
     usePasswordFocus: FocusRequester,
-    changeServerFocus: FocusRequester,
-): FocusRequester = when {
+): FocusRequester? = when {
     status.action() != null -> actionFocus
     passwordAvailable && status != TvSignInStatus.UpdateRequired -> usePasswordFocus
-    else -> changeServerFocus
+    else -> null
 }
 
 /** The "Try again" / "Show a new code" action a status offers, if any. */
@@ -517,9 +497,9 @@ private class NetworkSignInAction(
 )
 
 /**
- * The state's action ("Try again" / "Show a new code"), "Sign in with a
- * password" and "Change server" on one row, as on Apple TV. Controls stay
- * enabled while work runs so focus doesn't drop; the actions ignore repeats.
+ * The state's action ("Try again" / "Show a new code") and "Sign in with a
+ * password" on one row, as on Apple TV. Controls stay enabled while work runs
+ * so focus doesn't drop; the actions ignore repeats.
  */
 @Composable
 private fun CodeActions(
@@ -530,11 +510,8 @@ private fun CodeActions(
     actionTracking: Modifier,
     usePasswordFocus: FocusRequester,
     usePasswordTracking: Modifier,
-    changeServerFocus: FocusRequester,
-    changeServerTracking: Modifier,
     onAction: () -> Unit,
     onUsePassword: () -> Unit,
-    onChangeServer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val upTo = network?.focusRequester
@@ -561,24 +538,9 @@ private fun CodeActions(
                 focusRequester = usePasswordFocus,
                 modifier = Modifier
                     .then(usePasswordTracking)
-                    .focusProperties {
-                        right = changeServerFocus
-                        upTo?.let { up = it }
-                    },
+                    .focusProperties { upTo?.let { up = it } },
             )
         }
-        TvMarqueeButton(
-            text = stringResource(R.string.tv_signin_action_change_server),
-            onClick = onChangeServer,
-            kind = TvMarqueeButtonKind.Plain,
-            focusRequester = changeServerFocus,
-            modifier = Modifier
-                .then(changeServerTracking)
-                .focusProperties {
-                    if (offersPassword) left = usePasswordFocus
-                    upTo?.let { up = it }
-                },
-        )
     }
 }
 
@@ -589,7 +551,7 @@ private fun CodeActions(
  * in so focus doesn't jump; the view model ignores a second press.
  */
 @Composable
-private fun NetworkSignInButton(action: NetworkSignInAction, below: FocusRequester, modifier: Modifier = Modifier) {
+private fun NetworkSignInButton(action: NetworkSignInAction, below: FocusRequester? = null, modifier: Modifier = Modifier) {
     val providerName = action.provider.displayName
     val owner = action.provider.networkIdentity?.label
     val title = when {
@@ -606,7 +568,7 @@ private fun NetworkSignInButton(action: NetworkSignInAction, below: FocusRequest
             modifier = Modifier
                 .height(if (via != null) 52.dp else TvMarqueeMetrics.ButtonHeight)
                 .then(action.focusTracking)
-                .focusProperties { down = below },
+                .focusProperties { if (below != null) down = below },
         ) { ink ->
             if (!action.busy) TvProviderMark(action.provider)
             Column {
@@ -784,14 +746,12 @@ private fun PasswordScreen(
     signInFocus: FocusRequester,
     createAccountFocus: FocusRequester,
     backToPhoneFocus: FocusRequester,
-    changeServerFocus: FocusRequester,
     onUsernameChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onLoginClick: () -> Unit,
     signupEnabled: Boolean,
     onCreateAccount: () -> Unit,
     onBackToPhone: () -> Unit,
-    onChangeServer: () -> Unit,
     network: NetworkSignInAction? = null,
 ) {
     // Each rejected password shakes the fields and puts focus back on the
@@ -827,7 +787,7 @@ private fun PasswordScreen(
                 val firstSecondary = when {
                     signupEnabled -> createAccountFocus
                     !passwordOnly -> backToPhoneFocus
-                    else -> changeServerFocus
+                    else -> null
                 }
                 // While either sign-in waits, the fields and Sign in are disabled and
                 // can't take focus: "Continue as …" (which keeps focus while it waits)
@@ -930,7 +890,7 @@ private fun PasswordScreen(
                         isLoading = state.isLoading,
                         focusRequester = signInFocus,
                         enabled = !state.signingIn,
-                        modifier = Modifier.focusProperties { down = firstSecondary },
+                        modifier = Modifier.focusProperties { if (firstSecondary != null) down = firstSecondary },
                     )
                     if (signupEnabled) {
                         TvMarqueeButton(
@@ -951,20 +911,13 @@ private fun PasswordScreen(
                             modifier = Modifier.focusProperties { up = aboveSecondary },
                         )
                     }
-                    TvMarqueeButton(
-                        text = stringResource(R.string.tv_signin_action_change_server),
-                        onClick = onChangeServer,
-                        kind = TvMarqueeButtonKind.Plain,
-                        focusRequester = changeServerFocus,
-                        modifier = Modifier.focusProperties { up = aboveSecondary },
-                    )
                 }
             }
         },
         card = {
             TvUsePhoneCard(
                 if (passwordOnly) {
-                    "Signed in to Silo on your phone? Open it on the same Wi‑Fi and it can sign this TV in for you."
+                    "Signed in to weflix on your phone? Open it on the same Wi‑Fi and it can sign this TV in for you."
                 } else {
                     "Choose \"Use your phone instead\" to scan a code and approve on your phone. Nothing to type with the remote."
                 },

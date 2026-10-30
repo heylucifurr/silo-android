@@ -41,6 +41,7 @@ import org.siloserver.silo.common.settings.TitleArtStore
 import org.siloserver.silo.common.startup.StartupArtworkPlan
 import org.siloserver.silo.common.startup.warmAuthenticatedStartup
 import org.siloserver.silo.common.startup.warmProfileSelectionStartup
+import org.siloserver.silo.common.startup.defaultServerOrNull
 import org.siloserver.silo.common.ui.components.StartupSplashVideo
 import org.siloserver.silo.common.ui.components.StartupSplashResizeMode
 import org.siloserver.silo.network.IdentityTransition
@@ -105,6 +106,12 @@ class MainTvActivity : ComponentActivity() {
         /** Shared with [TvAppNavigation]'s consumer so intake and consumption
          * of a deep link line up in one logcat filter. */
         const val DEEP_LINK_TAG = "SiloDeepLink"
+
+/**
+ * App-link schemes the TV manifest registers. `weflix` is this app's scheme;
+ * `silo` stays accepted for the pairing and content links a Silo server issues.
+ */
+private val TV_APP_LINK_SCHEMES = setOf("weflix", "silo")
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -248,9 +255,9 @@ class MainTvActivity : ComponentActivity() {
                                         resizeMode = StartupSplashResizeMode.Fit,
                                         backgroundColor = splashBackground,
                                         // tvOS parity: the splash completes at video end
-                                        // or 4s, whichever comes first (StartupSplashView
+                                        // or 2s, whichever comes first (StartupSplashView
                                         // maximumDisplayDuration) — never a floor past it.
-                                        maxVisibleMillis = 4_000L,
+                                        maxVisibleMillis = 2_000L,
                                         onPlaybackComplete = {
                                             splashPlaybackComplete = true
                                             hasShownColdSplash = true
@@ -321,9 +328,9 @@ class MainTvActivity : ComponentActivity() {
      */
     private fun handleIntent(intent: Intent?) {
         val data = intent?.data ?: return
-        // `silo` is the only scheme the manifest registers; anything else is
-        // an unrelated launch intent and must not clobber a queued URI.
-        if (data.scheme == "silo") {
+        // `weflix` and `silo` are the schemes the manifest registers; anything
+        // else is an unrelated launch intent and must not clobber a queued URI.
+        if (data.scheme?.lowercase() in TV_APP_LINK_SCHEMES) {
             Log.i(DEEP_LINK_TAG, "deep link queued: ${data.host}/${data.lastPathSegment}")
             pendingDeepLink.value = data
         }
@@ -373,7 +380,10 @@ class MainTvActivity : ComponentActivity() {
         // must still settle.
         hasResolvedLaunchProfile = true
 
-        val activeEntry = registry.activeEntry.value
+        // This build ships pointed at its own server, so a fresh install opens
+        // on Sign In instead of the address screen. ServerSetup stays reachable
+        // only when saved state could not be read back.
+        val activeEntry = registry.defaultServerOrNull()
             ?: return TvRoute.ServerSetup.route
 
         // Restored servers were probed by whichever build saved them (or never,

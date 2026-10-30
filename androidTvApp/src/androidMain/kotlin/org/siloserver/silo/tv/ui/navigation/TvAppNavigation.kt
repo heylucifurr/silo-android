@@ -91,7 +91,6 @@ import org.siloserver.silo.common.player.playbackDisplayId
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.qualifier.named
 
-private const val RETURN_TO_MANAGE_SERVERS_KEY = "return_to_manage_servers"
 
 /**
  * The crash prompt must never cover a diagnostics surface — the viewer is
@@ -994,14 +993,6 @@ fun TvAppNavigation(
                     signupEnabled = signupEnabled,
                     sessionExpired = sessionExpired,
                     onCreateAccount = { navController.navigate(TvRoute.Signup.route) },
-                    // Point this TV at a different server — drop Login so Back from
-                    // setup can't return to a credential form with no server bound.
-                    onChangeServer = {
-                        navController.navigate(TvRoute.ServerSetup.route) {
-                            popUpTo(TvRoute.Login.ROUTE) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
                     onLoginSuccess = {
                         navController.navigate(TvRoute.ProfileSelection.route) {
                             popUpTo(TvRoute.Login.ROUTE) { inclusive = true }
@@ -1049,9 +1040,6 @@ fun TvAppNavigation(
                         launchSingleTop = true
                     }
                 },
-                onChangeServer = {
-                    navController.navigate(TvRoute.ServerList.route) { launchSingleTop = true }
-                },
                 onSignOut = {
                     scope.launch {
                         authRepository.logout()
@@ -1089,22 +1077,7 @@ fun TvAppNavigation(
         composable(TvRoute.Main.route) { mainEntry ->
             val watchPartyPlayGuard = rememberTvWatchPartyPlayGuard()
             TvWatchPartyPlayGuardDialog(watchPartyPlayGuard)
-            val returnToManageServers =
-                mainEntry.savedStateHandle.get<Boolean>(RETURN_TO_MANAGE_SERVERS_KEY) == true
             TvMainShell(
-                returnToManageServers = returnToManageServers,
-                onManageServersReturnFocusConsumed = {
-                    mainEntry.savedStateHandle.remove<Boolean>(RETURN_TO_MANAGE_SERVERS_KEY)
-                },
-                onManageServers = {
-                    mainEntry.savedStateHandle[RETURN_TO_MANAGE_SERVERS_KEY] = true
-                    navController.navigate(TvRoute.ServerList.route) { launchSingleTop = true }
-                },
-                onOpenDiagnosticsReport = { reportId ->
-                    navController.navigate(TvRoute.DiagnosticsReport(reportId).route) {
-                        launchSingleTop = true
-                    }
-                },
                 onOpenLibraryItemDetail = { contentId, libraryId ->
                     navController.navigateToTvItemDetail(contentId, libraryId = libraryId)
                 },
@@ -1179,14 +1152,6 @@ fun TvAppNavigation(
                             popUpTo(TvRoute.Main.route) { inclusive = true }
                         }
                         activeProfileReset.clearActiveProfile()
-                    }
-                },
-                // Android TV is now multi-server (parity with tvOS). "Switch
-                // Server" opens the server list; the user picks an existing
-                // saved server or chooses Add to enter a new URL.
-                onSwitchServer = {
-                    navController.navigate(TvRoute.ServerList.route) {
-                        launchSingleTop = true
                     }
                 },
                 onPairDevice = {
@@ -1936,3 +1901,4 @@ fun TvAppNavigation(
     }
     }
 }
+

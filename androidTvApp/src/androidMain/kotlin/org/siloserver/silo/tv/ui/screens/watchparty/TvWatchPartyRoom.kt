@@ -228,7 +228,7 @@ internal fun TvWatchPartyRoomView(
                     .padding(top = if (voting) 30.dp else TvPartyMetrics.headerTop),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(text = "Watch Party", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = SiloOnSurface)
+                Text(text = "Weflix Party", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = SiloOnSurface)
                 Spacer(modifier = Modifier.width(10.dp))
                 TvPartyConnectionDot(tone = tone, text = connectionText)
                 Spacer(modifier = Modifier.weight(1f))
@@ -933,7 +933,7 @@ internal fun TvWatchPartyInvitePage(
                             color = SiloOnSurface,
                         )
                         Text(
-                            text = "Anyone with a profile on this Silo server can enter it from Watch Party.",
+                            text = "Anyone with a profile on this Silo server can enter it from Weflix Party.",
                             fontSize = TvPartyMetrics.body,
                             lineHeight = 21.sp,
                             color = SiloSecondaryText,

@@ -134,7 +134,7 @@ class TvVideoPlaybackStarter(
             if (room != null && watchDetail.versions.none { it.fileId == room.fileId }) {
                 return failure(
                     request.contentId,
-                    "The Watch Party's version of this title isn't available to this profile.",
+                    "The Weflix Party's version of this title isn't available to this profile.",
                     diagnosticsCode = PlaybackDiagnosticsCode.NO_VERSIONS,
                 )
             }
@@ -315,7 +315,7 @@ class TvVideoPlaybackStarter(
                 unpublishedSessionId = null
                 return failure(
                     request.contentId,
-                    "The server offered a different version than the Watch Party's.",
+                    "The server offered a different version than the Weflix Party's.",
                     diagnosticsCode = PlaybackDiagnosticsCode.START_REQUEST,
                 )
             }

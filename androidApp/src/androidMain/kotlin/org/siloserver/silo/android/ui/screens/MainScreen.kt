@@ -52,7 +52,7 @@ import org.siloserver.silo.android.ui.navigation.scopedLocalDownloadBytes
 import org.siloserver.silo.android.ui.navigation.shouldShowDownloadsTab
 import org.siloserver.silo.android.ui.navigation.visibleMobileTabs
 import org.siloserver.silo.android.ui.navigation.continueWatchingDetailRoute
-import org.siloserver.silo.android.ui.screens.calendar.CalendarScreen
+import org.siloserver.silo.android.ui.screens.requests.RequestsScreen
 import org.siloserver.silo.android.ui.screens.home.HomeScreen
 import org.siloserver.silo.android.cast.SiloCastController
 import org.siloserver.silo.android.ui.screens.cast.SiloCastMiniBar
@@ -167,7 +167,6 @@ fun MainScreen(
     val signOutTeardown: org.siloserver.silo.android.auth.SignOutTeardown = koinInject()
     val switchProfile = org.siloserver.silo.android.ui.navigation.LocalProfileSwitch.current
     val reachabilityState by reachabilityMonitor.state.collectAsState()
-    val requestsEnabled by requestsFeatureStore.isEnabled.collectAsState()
     val reachabilityScope = rememberCoroutineScope()
     val activeEntry by serverRegistry.activeEntry.collectAsState()
     // Drives the initial load and every re-load. Keyed on the active server
@@ -315,11 +314,8 @@ fun MainScreen(
      * Runs in the navigation host's scope ([org.siloserver.silo.android.ui.navigation.LocalProfileSwitch]).
      */
     fun switchProfileFromMenu() = switchProfile()
-    val requestsMenuAction: (() -> Unit)? = if (requestsEnabled) {
-        { navController.navigate(Route.Requests.route) }
-    } else {
-        null
-    }
+    // Calendar has no server gate, so the row is always present.
+    val calendarMenuAction: () -> Unit = { navController.navigate(Route.Calendar.route) }
     val watchPartyMenuAction: (() -> Unit)? =
         if (watchPartyEnabled) {
             { navController.navigate(Route.WatchPartyHub().route) { launchSingleTop = true } }
@@ -433,13 +429,10 @@ fun MainScreen(
                             onRemoteChooseTvClick = { showSiloCastTargetPicker = true },
                             onRemoteDisconnectClick = { siloCastController.disconnect() },
                             isRemoteControlActive = siloCastState.hasActiveSession,
-                            onRequestsClick = requestsMenuAction,
+                            onCalendarClick = calendarMenuAction,
                             onWatchPartyClick = watchPartyMenuAction,
                             onSettingsClick = { navController.navigate(Route.Settings.route) },
                             onSwitchProfileClick = ::switchProfileFromMenu,
-                            onSwitchServerClick = {
-                                navController.navigate(Route.ServerList.route)
-                            },
                             onSignOutClick = ::signOutFromProfileMenu,
                         )
                     }
@@ -471,13 +464,10 @@ fun MainScreen(
                             activeProfile = headerState.activeProfile,
                             onLibrarySelectorClick = { showLibrarySelector = true },
                             onSearchClick = { navController.navigate(Route.Search().route) },
-                            onRequestsClick = requestsMenuAction,
+                            onCalendarClick = calendarMenuAction,
                             onWatchPartyClick = watchPartyMenuAction,
                             onSettingsClick = { navController.navigate(Route.Settings.route) },
                             onSwitchProfileClick = ::switchProfileFromMenu,
-                            onSwitchServerClick = {
-                                navController.navigate(Route.ServerList.route)
-                            },
                             onSignOutClick = ::signOutFromProfileMenu,
                         )
                     }
@@ -493,24 +483,28 @@ fun MainScreen(
                             viewModel = recommendationsViewModel,
                         )
                     }
-                    Tab.Calendar -> {
-                        // Calendar's floating week card is its own header (iOS):
-                        // the shared actions ride inside the card, no title row.
-                        CalendarScreen(
-                            onItemClick = { contentId ->
+                    Tab.Requests -> {
+                        // Requests is a tab body: no back disc, and the shared
+                        // actions ride in its pinned bar.
+                        RequestsScreen(
+                            onMyRequestsClick = { navController.navigate(Route.MyRequests.route) },
+                            onRequestDetailClick = { mediaType, tmdbId ->
+                                navController.navigate(Route.RequestDetail(mediaType, tmdbId).route)
+                            },
+                            onLibraryItemClick = { contentId ->
                                 navController.navigate(Route.ItemDetail(contentId).route)
+                            },
+                            onDiscoverRowClick = { key, title ->
+                                navController.navigate(Route.RequestDiscoverRow(key, title).route)
                             },
                             headerActions = {
                                 TabTopBarActions(
                                     activeProfile = headerState.activeProfile,
                                     onSearchClick = { navController.navigate(Route.Search().route) },
-                                    onRequestsClick = requestsMenuAction,
+                                    onCalendarClick = calendarMenuAction,
                                     onWatchPartyClick = watchPartyMenuAction,
                                     onSettingsClick = { navController.navigate(Route.Settings.route) },
                                     onSwitchProfileClick = ::switchProfileFromMenu,
-                                    onSwitchServerClick = {
-                                        navController.navigate(Route.ServerList.route)
-                                    },
                                     onSignOutClick = ::signOutFromProfileMenu,
                                 )
                             },
@@ -565,13 +559,10 @@ fun MainScreen(
                     isProfileLoading = headerState.isLoading,
                     hazeState = hazeState,
                     onSearchClick = { navController.navigate(Route.Search().route) },
-                    onRequestsClick = requestsMenuAction,
+                    onCalendarClick = calendarMenuAction,
                     onWatchPartyClick = watchPartyMenuAction,
                     onSettingsClick = { navController.navigate(Route.Settings.route) },
                     onSwitchProfileClick = ::switchProfileFromMenu,
-                    onSwitchServerClick = {
-                        navController.navigate(Route.ServerList.route)
-                    },
                     onSignOutClick = ::signOutFromProfileMenu,
                     leadingContent = {
                         if (title != null) {

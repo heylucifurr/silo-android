@@ -159,7 +159,7 @@ fun TvWatchPartyHubScreen(
             // ---- The pitch and whatever the viewer should know --------------
             Column(modifier = Modifier.width(380.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    TvPartyEyebrow("Watch Party")
+                    TvPartyEyebrow("Weflix Party")
                     Text(
                         text = "Watch something\ntogether",
                         fontSize = TvPartyMetrics.heroTitle,
@@ -183,13 +183,13 @@ fun TvWatchPartyHubScreen(
                 when {
                     error != null && !joinOpen -> TvPartyBanner(message = error, warning = true)
                     current != null -> Unit
-                    availability == null -> TvPartyBanner(message = "Checking Watch Party support…")
+                    availability == null -> TvPartyBanner(message = "Checking Weflix Party support…")
                     availability is WatchPartyAvailability.Unsupported ->
-                        TvPartyBanner(message = "This server doesn't support Watch Party yet.")
+                        TvPartyBanner(message = "This server doesn't support Weflix Party yet.")
                     availability == WatchPartyAvailability.NotAllowed ->
-                        TvPartyBanner(message = "Watch Party is not available for this profile on this server.")
+                        TvPartyBanner(message = "Weflix Party is not available for this profile on this server.")
                     availability is WatchPartyAvailability.ProbeFailed ->
-                        TvPartyBanner(message = "Couldn't check whether this server supports Watch Party.", warning = true)
+                        TvPartyBanner(message = "Couldn't check whether this server supports Weflix Party.", warning = true)
                     else -> Unit
                 }
             }
@@ -216,7 +216,7 @@ fun TvWatchPartyHubScreen(
                         TvPartyEyebrow("Host")
                         if (available && !canHost) {
                             Text(
-                                text = "This server can't host a Watch Party. You can still join one.",
+                                text = "This server can't host a Weflix Party. You can still join one.",
                                 fontSize = TvPartyMetrics.caption,
                                 color = SiloSecondaryText,
                             )

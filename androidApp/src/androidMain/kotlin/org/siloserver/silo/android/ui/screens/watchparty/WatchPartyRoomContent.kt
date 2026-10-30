@@ -363,7 +363,7 @@ internal fun WatchPartyRoomContent(
                         WatchPartyCircleButton(Icons.AutoMirrored.Filled.ArrowBack, "Navigate back", onBack, size = 40.dp)
                         Spacer(Modifier.width(14.dp))
                     }
-                    Text("Watch Party", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = SiloOnSurface)
+                    Text("Weflix Party", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = SiloOnSurface)
                     Spacer(Modifier.width(14.dp))
                     ConnectionDot(room, connected, reconnecting = !connected && !firstConnect)
                     Spacer(Modifier.weight(1f))

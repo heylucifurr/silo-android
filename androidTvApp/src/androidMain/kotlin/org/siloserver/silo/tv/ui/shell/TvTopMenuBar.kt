@@ -701,7 +701,7 @@ data class TvAccountState(
 private fun TvSiloWordmark() {
     Image(
         painter = painterResource(id = R.drawable.silo_wordmark),
-        contentDescription = "Silo",
+        contentDescription = "weflix",
         contentScale = ContentScale.Fit,
         modifier = Modifier
             .height(TvSiloWordmarkHeight)

@@ -3380,7 +3380,7 @@ private fun TvRoomIndicator(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         androidx.tv.material3.Text(
-            text = "Watch Party · $memberCount watching",
+            text = "Weflix Party · $memberCount watching",
             color = Color.White,
             style = androidx.tv.material3.MaterialTheme.typography.labelLarge,
         )

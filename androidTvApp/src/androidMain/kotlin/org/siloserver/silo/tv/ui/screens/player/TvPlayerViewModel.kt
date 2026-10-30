@@ -3281,7 +3281,7 @@ class TvPlayerViewModel(
                             onReplanRequestFailed(
                                 classification,
                                 notice,
-                                "The server offered a different version than the Watch Party's.",
+                                "The server offered a different version than the Weflix Party's.",
                             )
                             return@launch
                         }

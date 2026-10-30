@@ -21,6 +21,42 @@ class DeviceCodeFormatTest {
     }
 
     @Test
+    fun activationAddressesFollowTheServerTheClientUses() {
+        // The server advertises its own activation host; the client shows the
+        // address it actually reaches that server on.
+        assertEquals(
+            "https://weflix.me/activate",
+            DeviceCodeFormat.onServer("https://beta.weflix.me/activate", "https://weflix.me"),
+        )
+        assertEquals(
+            "https://weflix.me/activate?code=44468983",
+            DeviceCodeFormat.onServer("https://beta.weflix.me/activate?code=44468983", "https://weflix.me/"),
+        )
+        // Already the same origin: unchanged.
+        assertEquals(
+            "https://weflix.me/activate",
+            DeviceCodeFormat.onServer("https://weflix.me/activate", "https://weflix.me"),
+        )
+        // A LAN client keeps its own origin, port and all.
+        assertEquals(
+            "http://192.168.1.5:8090/activate",
+            DeviceCodeFormat.onServer("https://media.example.com/activate", "http://192.168.1.5:8090"),
+        )
+        // A server mounted under a path keeps the advertised path in full.
+        assertEquals(
+            "https://weflix.me/silo/activate",
+            DeviceCodeFormat.onServer("https://beta.weflix.me/silo/activate", "https://weflix.me"),
+        )
+        // Anything that is not an absolute URL is left alone.
+        assertEquals("", DeviceCodeFormat.onServer("", "https://weflix.me"))
+        assertEquals("/activate", DeviceCodeFormat.onServer("/activate", "https://weflix.me"))
+        assertEquals(
+            "https://beta.weflix.me/activate",
+            DeviceCodeFormat.onServer("https://beta.weflix.me/activate", "not a url"),
+        )
+    }
+
+    @Test
     fun activateTextDropsHttpsButKeepsHttpAndPaths() {
         assertEquals(
             "silo.example.test/activate",

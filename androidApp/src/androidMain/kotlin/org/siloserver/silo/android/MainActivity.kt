@@ -70,6 +70,7 @@ import org.siloserver.silo.common.settings.ServerDrivenConfigRefresher
 import org.siloserver.silo.common.startup.StartupArtworkPlan
 import org.siloserver.silo.common.startup.warmAuthenticatedStartup
 import org.siloserver.silo.common.startup.warmProfileSelectionStartup
+import org.siloserver.silo.common.startup.defaultServerOrNull
 import org.siloserver.silo.common.ui.components.StartupSplashVideo
 import org.siloserver.silo.network.ServerRegistry
 import org.siloserver.silo.network.TokenManager
@@ -212,9 +213,10 @@ class MainActivity : ComponentActivity() {
                                     .width(videoWidth)
                                     .aspectRatio(16f / 9f),
                                 backgroundColor = Color.Black,
-                                // iOS parity: video end or 4s, whichever first
-                                // (StartupSplashView maximumDisplayDuration).
-                                maxVisibleMillis = 4_000L,
+                                // iOS parity: video end or 2s, whichever first
+                                // (StartupSplashView maximumDisplayDuration). The
+                                // shipped clip is 2.0s, so the cap is a safety net.
+                                maxVisibleMillis = 2_000L,
                                 onPlaybackComplete = {
                                     splashPlaybackComplete = true
                                     hasShownColdSplash = true
@@ -508,7 +510,10 @@ class MainActivity : ComponentActivity() {
      * for the active entry — both are loaded from EncryptedSharedPreferences
      * during DI construction, so by the time we run we just consult them.
      *
-     *  - No active server → `ServerSetup` (registry is empty)
+     *  - No active server, nothing saved yet → the shipped default server is
+     *    adopted, so the flow continues to `Login` rather than asking for an
+     *    address
+     *  - Saved state unreadable → `ServerSetup`
      *  - Active server but no access token → `Login`
      *  - Tokens but no profile selected for THIS server → `ProfileSelection`
      *  - All set → `Home`
@@ -527,7 +532,10 @@ class MainActivity : ComponentActivity() {
         // screen arrives on top of an authenticated stack — which also means
         // its Back/Done has somewhere real to return to.
 
-        val activeEntry = registry.activeEntry.value
+        // This build ships pointed at its own server, so a fresh install opens
+        // on Sign In instead of the address screen. ServerSetup stays reachable
+        // only when saved state could not be read back.
+        val activeEntry = registry.defaultServerOrNull()
             ?: return Route.ServerSetup.route
 
         // Restored servers were probed by whichever build saved them (or never,

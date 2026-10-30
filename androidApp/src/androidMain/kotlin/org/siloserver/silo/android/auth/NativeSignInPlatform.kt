@@ -133,7 +133,7 @@ fun Context.openNativeSignIn(url: String): Boolean = try {
 }
 
 /**
- * Receives `org.siloserver.silo:/auth/callback`. Hands the redirect to the
+ * Receives `me.weflix:/auth/callback`. Hands the redirect to the
  * coordinator, which acts on it only when it answers the flow this app
  * started, then brings the app's task back to [MainActivity], closing the
  * Custom Tab above it. Shows nothing itself.

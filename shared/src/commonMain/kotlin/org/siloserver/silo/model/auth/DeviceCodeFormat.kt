@@ -42,4 +42,36 @@ object DeviceCodeFormat {
     /** `silo.example.com` from a verification address, for "Can't reach …" copy. */
     fun host(url: String): String =
         url.trim().substringAfter("://").substringBefore('/').substringBefore('?')
+
+    /**
+     * [url] as an address on [serverUrl]'s origin: the same path and query, the
+     * scheme/host/port taken from the server this client is talking to.
+     *
+     * A server may advertise an activation host of its own — `beta.example.com`
+     * while the client reaches it at `example.com` — and the advertised host is
+     * not necessarily one this user can open. The address the client already
+     * uses is, so the code and the QR point there instead.
+     *
+     * Both addresses keep their own scheme: an `http://192.168.1.5:8090` client
+     * keeps that origin, so a LAN install still shows a LAN address. Anything
+     * that is not an absolute URL is returned unchanged rather than mangled.
+     */
+    fun onServer(url: String, serverUrl: String): String {
+        val trimmed = url.trim()
+        val origin = origin(trimmed) ?: return url
+        val serverOrigin = origin(serverUrl.trim()) ?: return url
+        return serverOrigin + trimmed.removePrefix(origin)
+    }
+
+    /** `https://host:port` from an absolute URL, or null when there isn't one. */
+    private fun origin(url: String): String? {
+        val scheme = url.indexOf("://")
+        if (scheme <= 0) return null
+        val authority = url.substring(scheme + 3)
+            .substringBefore('/')
+            .substringBefore('?')
+            .substringBefore('#')
+        if (authority.isBlank()) return null
+        return url.substring(0, scheme + 3) + authority
+    }
 }

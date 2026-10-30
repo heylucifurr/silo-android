@@ -5,9 +5,10 @@ import org.siloserver.silo.model.navigation.MediaModeCapabilities
 val Tab.isUtilityTab: Boolean
     get() = this == Tab.Downloads
 
-// Apple-aligned shell: Home · Libraries · For You · Calendar, plus a Downloads
+// Apple-aligned shell: Home · Libraries · For You · Requests, plus a Downloads
 // tab only when the user has downloads. There is no per-media-type tab —
 // library content (video / audio / reading) is reached through the Libraries picker.
+// Calendar moved out of the bar and into the profile menu.
 fun visibleMobileTabs(
     @Suppress("UNUSED_PARAMETER") capabilities: MediaModeCapabilities,
     @Suppress("UNUSED_PARAMETER") showDownloads: Boolean,
@@ -15,7 +16,7 @@ fun visibleMobileTabs(
     add(Tab.Home)
     add(Tab.Libraries)
     add(Tab.ForYou)
-    add(Tab.Calendar)
+    add(Tab.Requests)
     // Keep Downloads present from the first authenticated frame. Capability
     // and local-record hydration may finish later, but navigation must not
     // shift underneath the user while that optional data arrives.

@@ -45,11 +45,12 @@ import org.siloserver.silo.viewmodel.RequestsViewModel
  */
 @Composable
 fun RequestsScreen(
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)? = null,
     onMyRequestsClick: () -> Unit,
     onRequestDetailClick: (mediaType: String, tmdbId: Int) -> Unit,
     onLibraryItemClick: (String) -> Unit,
     onDiscoverRowClick: (key: String, title: String) -> Unit,
+    headerActions: @Composable () -> Unit = {},
     viewModel: RequestsViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -60,6 +61,7 @@ fun RequestsScreen(
         onBackClick = onBackClick,
         isRefreshing = state.isRefreshing,
         onRefresh = viewModel::refresh,
+        actions = headerActions,
     ) {
         item(key = "search", contentType = "search") {
             RequestsSearchField(

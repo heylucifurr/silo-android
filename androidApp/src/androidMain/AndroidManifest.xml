@@ -72,13 +72,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
+                <!-- `weflix` is this app's scheme. `silo` stays accepted so the
+                     links a Silo server still issues (`silo://device`,
+                     `silo://invite`, `silo://watch-party`) keep working. -->
+                <data android:scheme="weflix" />
                 <data android:scheme="silo" />
                 <data android:host="device" />
                 <data android:host="invite" />
                 <data android:host="item" />
                 <data android:host="play" />
                 <data android:host="downloads" />
-                <!-- Watch Party invitation: silo://watch-party?server=…&token=… -->
+                <!-- Watch Party invitation: weflix://watch-party?server=…&token=… -->
                 <data android:host="watch-party" />
                 <!-- A Roku's pairing link: silo://cast?v=2&host=…&port=…&id=… -->
                 <data android:host="cast" />
@@ -86,7 +90,7 @@
         </activity>
 
         <!-- External sign-in (OIDC) redirect: the server sends the browser to
-             org.siloserver.silo:/auth/callback when a native sign-in ends
+             me.weflix:/auth/callback when a native sign-in ends
              (RFC 8252 private-use scheme; a custom scheme has no App Links
              verification, so no autoVerify). Android ignores path attributes
              in a filter without a host, so the filter names the scheme and
@@ -104,6 +108,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
+                <data android:scheme="me.weflix" />
+                <!-- Legacy redirect URI: a server whose OAuth client was
+                     registered before the rebrand still redirects to
+                     org.siloserver.silo:/auth/callback. -->
                 <data android:scheme="org.siloserver.silo" />
             </intent-filter>
         </activity>

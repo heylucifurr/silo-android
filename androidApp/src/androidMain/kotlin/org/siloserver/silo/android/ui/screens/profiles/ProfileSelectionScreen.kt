@@ -36,7 +36,6 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -75,7 +74,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.siloserver.silo.android.ui.components.marquee.MarqueeButton
 import org.siloserver.silo.android.ui.components.marquee.MarqueeButtonKind
@@ -83,7 +81,6 @@ import org.siloserver.silo.android.ui.components.marquee.MarqueeErrorHaptic
 import org.siloserver.silo.android.ui.components.marquee.MarqueeErrorText
 import org.siloserver.silo.android.ui.components.marquee.MarqueeHeadline
 import org.siloserver.silo.android.ui.components.marquee.MarqueeMetrics
-import org.siloserver.silo.android.ui.components.marquee.MarqueeServerChip
 import org.siloserver.silo.android.ui.components.marquee.MarqueeTopBarSpacer
 import org.siloserver.silo.android.ui.components.marquee.MarqueeWordmark
 import org.siloserver.silo.android.ui.components.marquee.marqueePressHaptic
@@ -93,10 +90,7 @@ import org.siloserver.silo.common.ui.marquee.MarqueeScene
 import org.siloserver.silo.common.ui.marquee.MarqueeScrim
 import org.siloserver.silo.common.ui.marquee.MarqueeScrimStyle
 import org.siloserver.silo.common.ui.marquee.ProfileTilePalette
-import org.siloserver.silo.common.ui.marquee.ServerBrandingLoader
-import org.siloserver.silo.common.ui.marquee.rememberSignInServer
 import org.siloserver.silo.model.profile.Profile
-import org.siloserver.silo.network.ServerRegistry
 
 private val TopGap = 24.dp
 private val GridGap = 36.dp
@@ -105,15 +99,17 @@ private val BottomGap = 20.dp
 
 /**
  * "Who's watching?" (silo-apple `ProfileSelectionView`): round avatars sized
- * to the household, centered between the title and small utilities (change
- * server, sign out, and manage profiles). Pressing a profile
+ * to the household, centered between the title and small utilities (sign out
+ * and manage profiles). Pressing a profile
  * tints the backdrop with that person's color; a PIN prompt opens full
  * screen over the same light.
+ *
+ * There is no "Change server" and no server capsule here in this build: the
+ * server is fixed, so the top bar is the wordmark alone.
  *
  * @param onNavigateToHome Called after a profile is selected.
  * @param onNavigateToCreateProfile Called when "Add profile" is tapped.
  * @param onNavigateToEditProfile Called when a profile is tapped in manage mode.
- * @param onChangeServer "Change server" from the footer or the server chip.
  * @param onSignOut "Sign out" from the footer.
  */
 @Composable
@@ -121,19 +117,10 @@ fun ProfileSelectionScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToCreateProfile: () -> Unit,
     onNavigateToEditProfile: (profileId: String) -> Unit,
-    onChangeServer: () -> Unit,
     onSignOut: () -> Unit,
     viewModel: ProfileSelectionViewModel = koinViewModel(),
-    brandingLoader: ServerBrandingLoader = koinInject(),
-    serverRegistry: ServerRegistry = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val activeEntry by serverRegistry.activeEntry.collectAsState()
-    val server = rememberSignInServer(
-        serverUrl = activeEntry?.url.orEmpty(),
-        savedName = activeEntry?.fetchedName,
-        loader = brandingLoader,
-    )
     var pressedProfileId by remember { mutableStateOf<String?>(null) }
 
     // Reload on resume so a profile created/edited on a pushed screen is
@@ -211,14 +198,6 @@ fun ProfileSelectionScreen(
             ) {
                 MarqueeWordmark()
                 MarqueeTopBarSpacer()
-                MarqueeServerChip(
-                    name = server.name,
-                    hostLabel = server.hostLabel,
-                    markUrl = server.branding?.markUrl,
-                    actionLabel = "Change server",
-                    onAction = onChangeServer,
-                    enabled = !pinOpen && !state.openingOnlyProfile,
-                )
             }
             Picker(
                 state = state,
@@ -231,7 +210,6 @@ fun ProfileSelectionScreen(
                 },
                 onProfileDelete = viewModel::requestDeleteProfile,
                 onAddProfile = viewModel::requestAddProfile,
-                onChangeServer = onChangeServer,
                 onSignOut = onSignOut,
                 onToggleManage = viewModel::toggleManageMode,
                 modifier = Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars),
@@ -265,7 +243,6 @@ private fun Picker(
     onProfileTap: (Profile) -> Unit,
     onProfileDelete: (Profile) -> Unit,
     onAddProfile: () -> Unit,
-    onChangeServer: () -> Unit,
     onSignOut: () -> Unit,
     onToggleManage: () -> Unit,
     modifier: Modifier = Modifier,
@@ -338,20 +315,11 @@ private fun Picker(
                 }
                 Spacer(Modifier.height(FooterGap))
                 Spacer(Modifier.weight(1f))
-                // Changing server and signing out are utilities, kept small and below the people.
+                // Signing out is a utility, kept small and below the people.
                 Row(
                     Modifier.onSizeChanged { footerHeight = it.height },
                     horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                 ) {
-                    MarqueeButton(
-                        text = "Change server",
-                        onClick = onChangeServer,
-                        kind = MarqueeButtonKind.Plain,
-                        fullWidth = false,
-                        compact = true,
-                        icon = Icons.Outlined.Dns,
-                        enabled = enabled,
-                    )
                     MarqueeButton(
                         text = "Sign out",
                         onClick = onSignOut,

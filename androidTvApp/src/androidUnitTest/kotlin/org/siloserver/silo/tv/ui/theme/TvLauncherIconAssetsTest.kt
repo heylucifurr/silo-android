@@ -2,6 +2,7 @@ package org.siloserver.silo.tv.ui.theme
 
 import java.io.File
 import javax.imageio.ImageIO
+import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -10,7 +11,7 @@ import kotlin.test.assertTrue
 class TvLauncherIconAssetsTest {
 
     @Test
-    fun adaptiveForegroundUsesMarkOnlySafeZoneInsteadOfBakedSquareTile() {
+    fun adaptiveForegroundIsMarkOnlyInsideTheSafeZone() {
         val foreground = ImageIO.read(
             File("src/androidMain/res/mipmap-xxxhdpi/ic_launcher_foreground.png"),
         )
@@ -19,8 +20,10 @@ class TvLauncherIconAssetsTest {
         assertEquals(432, foreground.height)
         assertTrue(
             foreground.colorModel.hasAlpha(),
-            "Adaptive foreground must use transparency so Google TV can own the launcher mask.",
+            "Adaptive foreground must use transparency so the launcher can own the mask.",
         )
+        // The mark must not be a baked-in square tile: every edge and the centre
+        // stay transparent so the launcher's shape shows the background colour.
         assertEquals(0, foreground.alphaAt(0, 0), "Top-left corner should be transparent.")
         assertEquals(0, foreground.alphaAt(foreground.width - 1, 0), "Top-right corner should be transparent.")
         assertEquals(0, foreground.alphaAt(0, foreground.height - 1), "Bottom-left corner should be transparent.")
@@ -29,24 +32,34 @@ class TvLauncherIconAssetsTest {
         assertEquals(0, foreground.alphaAt(foreground.width / 2, foreground.height - 1), "Bottom edge should be transparent.")
         assertEquals(0, foreground.alphaAt(0, foreground.height / 2), "Left edge should be transparent.")
         assertEquals(0, foreground.alphaAt(foreground.width - 1, foreground.height / 2), "Right edge should be transparent.")
-        assertEquals(
-            0,
-            foreground.alphaAt(foreground.width / 2, foreground.height / 2),
-            "The adaptive foreground should be mark-only, not a centered opaque square tile.",
+
+        // "Mark-only, not a baked tile" is about how much of the layer is
+        // transparent, not about any one pixel: a centred wordmark legitimately
+        // has an opaque centre, while a baked square tile fills the canvas.
+        val transparent = foreground.transparentPixelCount()
+        assertTrue(
+            transparent > foreground.width * foreground.height / 2,
+            "Adaptive foreground must be mostly transparent (mark-only), not a baked tile: " +
+                "$transparent of ${foreground.width * foreground.height} pixels",
         )
 
-        val bounds = foreground.opaqueBounds()
-        assertTrue(
-            bounds.minX in 170..185 && bounds.maxX in 245..265,
-            "Opaque mark should stay centered horizontally inside the adaptive safe zone: $bounds",
+        // A launcher masks the adaptive layer with a CIRCLE, so the corners of
+        // the 66/108 safe-zone square are not safe: a wide mark fitted to the
+        // zone's full width has its left and right ends outside the mask, and a
+        // circular launcher slices the first and last letters off.
+        val content = foreground.contentBounds()
+        val maskRadius = foreground.width * (66f / 108f) / 2f
+        val halfDiagonal = sqrt(
+            (content.width / 2f) * (content.width / 2f) + (content.height / 2f) * (content.height / 2f),
         )
         assertTrue(
-            bounds.minY in 80..100 && bounds.maxY in 330..355,
-            "Opaque mark should stay vertically inset inside the adaptive safe zone: $bounds",
+            halfDiagonal <= maskRadius,
+            "Mark must fit inside the mask's circle (needs ${"%.1f".format(halfDiagonal)}px, " +
+                "has ${"%.1f".format(maskRadius)}px): $content",
         )
         assertTrue(
-            bounds.width in 70..100 && bounds.height in 240..275,
-            "Adaptive foreground should contain a tall Silo mark, not a full tile: $bounds",
+            content.width * content.height > foreground.width * foreground.height / 50,
+            "Adaptive foreground should contain a legible mark, not an empty or speckled layer: $content",
         )
     }
 
@@ -71,90 +84,69 @@ class TvLauncherIconAssetsTest {
     }
 
     @Test
-    fun legacyTvLauncherIconContainsCenteredColorSiloMark() {
+    fun legacyTvLauncherIconKeepsACentredMarkOnThePlate() {
         val icon = ImageIO.read(File("src/androidMain/res/mipmap-xxxhdpi/ic_launcher.png"))
-        val accentPixels = buildList {
-            for (y in 0 until icon.height) {
-                for (x in 0 until icon.width) {
-                    val rgb = icon.getRGB(x, y)
-                    if (rgb.red() > 180 && rgb.red() > rgb.blue() * 1.15 && rgb.green() < 180) {
-                        add(x to y)
-                    }
-                }
-            }
-        }
+        // The mark is anything that is not the flat plate colour. Deriving it
+        // from the image keeps this assertion brand-agnostic: whatever the
+        // brand's palette is, the artwork has to read as a mark on a plate.
+        val plate = icon.plateColour()
+        val mark = icon.markPixels(plate)
 
-        assertTrue(accentPixels.size > icon.width * icon.height / 100)
-        val averageX = accentPixels.sumOf { it.first }.toDouble() / accentPixels.size
         assertTrue(
-            averageX in icon.width * 0.42..icon.width * 0.58,
-            "Brand accent must remain centered: $averageX",
+            mark.size > icon.width * icon.height / 100,
+            "Launcher icon must show a legible mark, not a flat plate: ${mark.size} pixels",
         )
-
-        var nearWhitePixels = 0
-        for (y in 0 until icon.height) {
-            for (x in 0 until icon.width) {
-                val rgb = icon.getRGB(x, y)
-                if (rgb.red() > 230 && rgb.green() > 230 && rgb.blue() > 230) nearWhitePixels++
-            }
-        }
+        val averageX = mark.sumOf { it.first }.toDouble() / mark.size
         assertTrue(
-            nearWhitePixels < icon.width * icon.height / 50,
-            "Square launcher icon must not bake in the white banner wordmark: $nearWhitePixels pixels",
+            averageX in icon.width * 0.35..icon.width * 0.65,
+            "Mark must remain horizontally centred: $averageX of ${icon.width}",
+        )
+        val averageY = mark.sumOf { it.second }.toDouble() / mark.size
+        assertTrue(
+            averageY in icon.height * 0.35..icon.height * 0.65,
+            "Mark must remain vertically centred: $averageY of ${icon.height}",
+        )
+        val bounds = mark.pixelBounds()
+        assertTrue(
+            bounds.minX >= icon.width * 0.05 && bounds.maxX <= icon.width * 0.95 &&
+                bounds.minY >= icon.height * 0.05 && bounds.maxY <= icon.height * 0.95,
+            "Mark must keep a margin inside the tile so a launcher's mask cannot clip it: $bounds",
         )
     }
 
     @Test
-    fun tvBannerRemainsOpaqueWordmarkAtRequiredDimensions() {
+    fun tvBannerKeepsItsLockupInsideTheFireTvSquareCrop() {
         val banner = ImageIO.read(File("src/androidMain/res/drawable/tv_banner.png"))
         assertEquals(320, banner.width)
         assertEquals(180, banner.height)
-        assertFalse(banner.colorModel.hasAlpha())
+        assertFalse(banner.colorModel.hasAlpha(), "TV banner must be opaque.")
 
-        val wordmarkPixels = buildList {
-            for (y in 0 until banner.height) {
-                for (x in 0 until banner.width) {
-                    val rgb = banner.getRGB(x, y)
-                    if (rgb.red() > 230 && rgb.green() > 230 && rgb.blue() > 230) {
-                        add(x to y)
-                    }
-                }
-            }
-        }
-        assertTrue(wordmarkPixels.size > 500, "TV banner must retain the white Silo wordmark.")
-        val wordmarkBounds = wordmarkPixels.pixelBounds()
+        // The lockup is whatever is not the flat background: Fire OS crops the
+        // banner to its centred square, and the lockup is the part that must
+        // survive that crop. Colour-agnostic, so a rebrand cannot silently move
+        // the artwork out of the safe area.
+        val background = banner.plateColour()
+        val lockup = banner.markPixels(background)
+        assertTrue(lockup.size > 500, "TV banner must show a lockup, not a flat background: ${lockup.size} pixels")
+
+        val bounds = lockup.pixelBounds()
         assertTrue(
-            wordmarkBounds.minX >= 70 && wordmarkBounds.maxX <= 249,
-            "White wordmark must remain inside Fire TV's centered square crop: $wordmarkBounds",
+            bounds.minX >= 70 && bounds.maxX <= 249,
+            "Lockup must remain inside Fire TV's centered square crop: $bounds",
         )
         assertTrue(
-            wordmarkBounds.width in 40..180 && wordmarkBounds.height in 10..90,
-            "White wordmark must retain a complete, readable shape: $wordmarkBounds",
+            bounds.width in 40..180 && bounds.height in 10..90,
+            "Lockup must retain a complete, readable shape: $bounds",
         )
         assertTrue(
-            wordmarkBounds.width * wordmarkBounds.height >= 500,
-            "White wordmark bounds must not collapse to a small or fragmented mark: $wordmarkBounds",
+            bounds.width * bounds.height >= 500,
+            "Lockup bounds must not collapse to a small or fragmented mark: $bounds",
         )
-    }
-
-    @Test
-    fun tvBannerKeepsColorMarkInsideTheFireTvSquareSafeArea() {
-        val banner = ImageIO.read(File("src/androidMain/res/drawable/tv_banner.png"))
-        val accentPixels = buildList {
-            for (y in 0 until banner.height) {
-                for (x in 0 until banner.width) {
-                    val rgb = banner.getRGB(x, y)
-                    if (rgb.red() > 180 && rgb.red() > rgb.blue() * 1.15 && rgb.green() < 180) {
-                        add(x to y)
-                    }
-                }
-            }
-        }
-
-        assertTrue(accentPixels.size > 100, "TV banner must retain the colorful Silo mark.")
-        val minX = accentPixels.minOf { it.first }
-        val maxX = accentPixels.maxOf { it.first }
-        assertTrue(minX >= 70 && maxX <= 250, "Color mark must fit inside Fire TV's centered square crop.")
+        val averageY = lockup.sumOf { it.second }.toDouble() / lockup.size
+        assertTrue(
+            averageY in banner.height * 0.35..banner.height * 0.65,
+            "Lockup must remain vertically centred inside the banner: $averageY of ${banner.height}",
+        )
     }
 }
 
@@ -165,20 +157,56 @@ private fun java.awt.image.BufferedImage.alphaAt(x: Int, y: Int): Int =
         255
     }
 
-private fun Int.red(): Int = (this ushr 16) and 0xff
+/** The flat colour the artwork sits on: the most common pixel, i.e. the plate. */
+private fun java.awt.image.BufferedImage.plateColour(): Int {
+    val counts = HashMap<Int, Int>()
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            val rgb = getRGB(x, y) and 0xffffff
+            counts[rgb] = (counts[rgb] ?: 0) + 1
+        }
+    }
+    return counts.maxByOrNull { it.value }?.key ?: 0
+}
 
-private fun Int.green(): Int = (this ushr 8) and 0xff
+/** Every pixel that is not the plate colour, as (x, y) pairs. */
+private fun java.awt.image.BufferedImage.markPixels(plate: Int): List<Pair<Int, Int>> =
+    buildList {
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                if ((getRGB(x, y) and 0xffffff) != plate) add(x to y)
+            }
+        }
+    }
 
-private fun Int.blue(): Int = this and 0xff
+/** How much of the layer carries no artwork. */
+private fun java.awt.image.BufferedImage.transparentPixelCount(): Int {
+    var count = 0
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            if (alphaAt(x, y) <= 16) count++
+        }
+    }
+    return count
+}
 
-private data class AlphaBounds(
-    val minX: Int,
-    val minY: Int,
-    val maxX: Int,
-    val maxY: Int,
-) {
-    val width: Int = maxX - minX + 1
-    val height: Int = maxY - minY + 1
+/** Bounding box of the visible (non-transparent) artwork. */
+private fun java.awt.image.BufferedImage.contentBounds(): PixelBounds {
+    var minX = width
+    var minY = height
+    var maxX = -1
+    var maxY = -1
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            if (alphaAt(x, y) > 16) {
+                if (x < minX) minX = x
+                if (y < minY) minY = y
+                if (x > maxX) maxX = x
+                if (y > maxY) maxY = y
+            }
+        }
+    }
+    return PixelBounds(minX = minX, minY = minY, maxX = maxX, maxY = maxY)
 }
 
 private data class PixelBounds(
@@ -197,21 +225,3 @@ private fun List<Pair<Int, Int>>.pixelBounds(): PixelBounds = PixelBounds(
     maxX = maxOf { it.first },
     maxY = maxOf { it.second },
 )
-
-private fun java.awt.image.BufferedImage.opaqueBounds(): AlphaBounds {
-    var minX = width
-    var minY = height
-    var maxX = -1
-    var maxY = -1
-    for (y in 0 until height) {
-        for (x in 0 until width) {
-            if (alphaAt(x, y) > 16) {
-                if (x < minX) minX = x
-                if (y < minY) minY = y
-                if (x > maxX) maxX = x
-                if (y > maxY) maxY = y
-            }
-        }
-    }
-    return AlphaBounds(minX = minX, minY = minY, maxX = maxX, maxY = maxY)
-}

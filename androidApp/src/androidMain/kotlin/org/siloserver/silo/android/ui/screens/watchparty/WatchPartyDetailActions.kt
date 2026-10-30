@@ -128,7 +128,7 @@ class WatchPartyDetailActions internal constructor(
     /** The action for [item], or null when Watch Party is off or nothing applies. */
     fun actionFor(item: WatchPartyItem?): DetailPartyAction? {
         if (!enabled || item == null) return null
-        val party = room ?: return if (canHost) DetailPartyAction("Watch Party") { onHost(item) } else null
+        val party = room ?: return if (canHost) DetailPartyAction("Weflix Party") { onHost(item) } else null
         val host = party.selfRole == MemberRole.Host && party.selfCanManageRoom
         return when {
             host && party.phase == RoomPhase.Lobby && canStage ->

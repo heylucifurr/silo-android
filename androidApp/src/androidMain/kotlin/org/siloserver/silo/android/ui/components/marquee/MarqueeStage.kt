@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
@@ -25,9 +26,15 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -43,6 +50,10 @@ import org.siloserver.silo.common.ui.marquee.MarqueeScrimStyle
  *
  * @param onBack what system Back does; null leaves Back to the navigation
  *   host. Pass null while a sign-in is in flight so leaving can't race it.
+ * @param hero optional brand mark centred in the room above the content, which
+ *   bottom-anchoring leaves by construction. It takes exactly what the form
+ *   leaves it and shrinks to fit, so a raised keyboard makes it smaller rather
+ *   than making it disappear.
  */
 @Composable
 fun MarqueeStage(
@@ -53,6 +64,7 @@ fun MarqueeStage(
     onBack: (() -> Unit)? = null,
     blockBack: Boolean = false,
     topBar: @Composable RowScope.() -> Unit = {},
+    hero: @Composable (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(enabled = onBack != null || blockBack) { if (!blockBack) onBack?.invoke() }
@@ -78,6 +90,11 @@ fun MarqueeStage(
                     .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)),
             ) {
                 val viewport = maxHeight
+                val density = LocalDensity.current
+                // Height the form needs, measured rather than guessed, so the mark
+                // can take exactly the room above it. Zero until the first layout,
+                // which is also what a stage with room to spare looks like.
+                var formHeight by remember { mutableStateOf(0.dp) }
                 Column(
                     Modifier
                         .fillMaxSize()
@@ -90,22 +107,52 @@ fun MarqueeStage(
                             .heightIn(min = viewport)
                             .widthIn(max = maxWidth)
                             .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp, bottom = 20.dp),
-                        verticalArrangement = Arrangement.Bottom,
-                        content = content,
-                    )
+                            .padding(start = 24.dp, end = 24.dp, bottom = StageBottomPadding),
+                        // A hero and the form are the two ends of a first-run
+                        // screen, so they share the height between them. Without
+                        // one, content keeps its bottom-anchored look.
+                        verticalArrangement = if (hero != null) {
+                            Arrangement.SpaceBetween
+                        } else {
+                            Arrangement.Bottom
+                        },
+                    ) {
+                        if (hero != null) {
+                            // The mark keeps whatever the form leaves and shrinks
+                            // to fit it: a raised keyboard should make the brand
+                            // smaller, not make it disappear.
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(
+                                        (viewport - formHeight - StageBottomPadding)
+                                            .coerceAtLeast(0.dp),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) { hero() }
+                        }
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .onSizeChanged { formHeight = with(density) { it.height.toDp() } },
+                            content = content,
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+/** Padding under a first-run screen's content, shared with the hero's room. */
+private val StageBottomPadding = 20.dp
+
 /** The Silo wordmark for a first-run top bar. */
 @Composable
 fun MarqueeWordmark(width: Dp = 92.dp) {
     Image(
         painter = painterResource(R.drawable.silo_wordmark),
-        contentDescription = "Silo",
+        contentDescription = "weflix",
         contentScale = ContentScale.Fit,
         modifier = Modifier.width(width),
     )

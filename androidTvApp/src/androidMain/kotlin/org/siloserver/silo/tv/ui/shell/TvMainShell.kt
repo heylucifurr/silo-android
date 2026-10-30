@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.People
@@ -182,10 +181,6 @@ private const val CONTENT_HANDOFF_ATTEMPTS = 3
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TvMainShell(
-    returnToManageServers: Boolean = false,
-    onManageServersReturnFocusConsumed: () -> Unit = {},
-    onManageServers: () -> Unit,
-    onOpenDiagnosticsReport: (reportId: String) -> Unit,
     onOpenItemDetail: (contentId: String) -> Unit,
     onOpenLibraryItemDetail: (String, Int?) -> Unit,
     onOpenItemDetailSelection: (
@@ -206,7 +201,6 @@ fun TvMainShell(
     onOpenSectionBrowse: (sectionId: String, title: String, libraryId: Int?, mediaScope: String?) -> Unit,
     onSignedOut: () -> Unit,
     onSwitchProfile: () -> Unit,
-    onSwitchServer: () -> Unit,
     onPairDevice: () -> Unit,
     onPlayItem: (contentId: String, type: String?, resumePositionSeconds: Double?) -> Unit,
     /** Open the Watch Party hub. */
@@ -1488,10 +1482,6 @@ fun TvMainShell(
                 shellComposable(TvMainRoute.Settings.route) {
                     TvSettingsScreen(
                         homeSectionsViewModel = homeViewModel,
-                        onManageServers = onManageServers,
-                        onOpenDiagnosticsReport = onOpenDiagnosticsReport,
-                        initialManageServersFocus = returnToManageServers,
-                        onManageServersReturnFocusConsumed = onManageServersReturnFocusConsumed,
                         onSignedOut = onSignedOut,
                         onSwitchProfile = onSwitchProfile,
                         onNavigateHome = {
@@ -1762,7 +1752,6 @@ fun TvMainShell(
                     // the Home row restored by the shared content container.
                     navigateToRoute(TvMainRoute.Settings.route)
                 },
-                onSwitchServer = closeMenuAnd(onSwitchServer),
                 onSignOut = closeMenuAnd(onSignedOut),
                 onDismiss = { focusState.dismissProfileMenu() },
                 modifier = Modifier
@@ -1970,8 +1959,10 @@ private fun cascadePanelOffset(
  * returns focus to the avatar via [onDismiss].
  *
  * Row set + order mirrors tvOS: Switch Profile · Watchlist · Favorites ·
- * History · Watch Party (Settings → Experimental) · Settings · Switch Server ·
- * Sign Out. Calendar and Requests are top-level tabs.
+ * History · Weflix Party (Settings → Experimental) · Settings · Sign Out.
+ * Calendar and Requests are top-level tabs. There is no "Switch Server" row in
+ * this build: the server is fixed, so switching is only offered from the
+ * profile picker's change-server action.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -1986,7 +1977,6 @@ private fun TvProfileDropdown(
     showWatchParty: Boolean,
     onWatchParty: () -> Unit,
     onSettings: () -> Unit,
-    onSwitchServer: () -> Unit,
     onSignOut: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -2032,7 +2022,7 @@ private fun TvProfileDropdown(
         ProfileDropdownRow(label = "History", icon = Icons.Filled.History, onClick = onHistory)
         if (showWatchParty) {
             ProfileDropdownRow(
-                label = "Watch Party",
+                label = "Weflix Party",
                 icon = Icons.Filled.People,
                 onClick = onWatchParty,
             )
@@ -2041,7 +2031,6 @@ private fun TvProfileDropdown(
         ProfileDropdownDivider()
 
         ProfileDropdownRow(label = "Settings", icon = Icons.Filled.Settings, onClick = onSettings)
-        ProfileDropdownRow(label = "Switch Server", icon = Icons.Filled.Dns, onClick = onSwitchServer)
         ProfileDropdownRow(
             label = "Sign Out",
             icon = Icons.AutoMirrored.Filled.Logout,

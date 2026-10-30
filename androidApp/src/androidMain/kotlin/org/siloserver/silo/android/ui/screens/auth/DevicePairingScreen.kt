@@ -1,6 +1,5 @@
 package org.siloserver.silo.android.ui.screens.auth
 
-import androidx.compose.material.icons.rounded.Dns
 import org.siloserver.silo.common.ui.marquee.ServerBranding
 import org.siloserver.silo.android.ui.components.SiloMenuItem
 import org.siloserver.silo.android.ui.components.SiloDropdownMenu
@@ -24,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card

@@ -11,7 +11,7 @@ class MobileMediaTabsTest {
     // Apple-aligned shell stays structurally fixed while capabilities and
     // download records hydrate, so the selected pill never shifts underneath
     // the user after the first authenticated frame.
-    private val baseLabels = listOf("Home", "Libraries", "For You", "Calendar", "Downloads")
+    private val baseLabels = listOf("Home", "Libraries", "For You", "Requests", "Downloads")
 
     @Test
     fun fixedTabsIncludeDownloadsWhenPresent() {

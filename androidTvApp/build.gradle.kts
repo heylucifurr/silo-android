@@ -19,8 +19,12 @@ val siloVersionName = providers
     .gradleProperty("siloVersionName")
     .orElse(providers.environmentVariable("SILO_VERSION_NAME"))
     // Release builds get the store version from scripts/release-version.py
-    // (release.yml). Local builds are 0.0.0 so they never pass for a release.
-    .orElse("0.0.0")
+    // (release.yml passes -PsiloVersionName, which wins over this default).
+    // Unstamped local builds report 1.0.0 — this fork's first store version —
+    // so a debug APK names the same version a tester sees. A local build is
+    // still identifiable by its build number (0) and channel ("sideload"),
+    // which is what used to separate it from a release.
+    .orElse("1.0.0")
 
 // The build number: one counter for the repository, never reset (see
 // scripts/release-version.py). It is folded into the versionCode by CI, but the
@@ -176,7 +180,7 @@ android {
         // phone app requires android.hardware.touchscreen). The `namespace`
         // above stays distinct so the generated R/BuildConfig classes don't
         // collide with the phone module.
-        applicationId = "org.siloserver.silo"
+        applicationId = "me.weflix"
         minSdk = 24
         targetSdk = 36
         // Two artifacts under one listing need distinct versionCodes: phone =

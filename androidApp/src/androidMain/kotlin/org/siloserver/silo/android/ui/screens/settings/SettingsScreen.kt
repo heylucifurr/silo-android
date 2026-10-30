@@ -210,23 +210,8 @@ fun SettingsScreen(
                 }
             }
 
-            item(key = "search") {
-                SettingsSearchField(query = query, onQueryChange = { query = it })
-            }
-
-            if (!hasResults) {
-                item(key = "no-results") {
-                    Text(
-                        text = "No Results for “${query.trim()}”",
-                        style = SettingsTextStyles.rowLabel,
-                        color = SiloSecondaryText,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 36.dp),
-                    )
-                }
-            }
+            // Search is hidden in this build, so the list always shows every
+            // section and the empty-results state is unreachable.
 
             if (matchesInterface || matchesNotifications || matchesProfileSelection) {
                 item(key = "preferences") {
@@ -326,30 +311,11 @@ fun SettingsScreen(
                 }
             }
 
-            if (showDiagnostics) {
-                item(key = "support") {
-                    SettingsSection(title = "Support") {
-                        SettingsNavigationRow(
-                            label = "Diagnostics",
-                            icon = Icons.Filled.MonitorHeart,
-                            value = diagnosticsAvailabilityLabel(diagnosticsState.availability),
-                            onClick = onNavigateToDiagnostics,
-                        )
-                    }
-                }
-            }
+            // Support is hidden in this build.
 
             if (matchesServer || matchesPairDevice) {
                 item(key = "connection") {
                     SettingsSection(title = "Connection") {
-                        if (matchesServer) {
-                            SettingsNavigationRow(
-                                label = "Server",
-                                icon = Icons.Filled.Dns,
-                                value = serverLabel,
-                                onClick = onNavigateToServers,
-                            )
-                        }
                         if (matchesPairDevice) {
                             SettingsNavigationRow(
                                 label = stringResource(R.string.sign_in_tv_settings_label),
@@ -378,8 +344,8 @@ fun SettingsScreen(
                         )
                         // Device-local; never synced with the server's settings.
                         SettingsSwitchRow(
-                            label = "Watch Party",
-                            description = "Try Watch Party before it's finished. Turning it off leaves any party you're in.",
+                            label = "Weflix Party",
+                            description = "Try Weflix Party before it's finished. Turning it off leaves any party you're in.",
                             icon = Icons.Filled.Groups,
                             checked = watchPartyEnabled,
                             onCheckedChange = watchPartyExperiment::setEnabled,
@@ -399,11 +365,6 @@ fun SettingsScreen(
                             label = "Version",
                             icon = Icons.Filled.Info,
                             value = versionLabel,
-                        )
-                        SettingsNavigationRow(
-                            label = "Privacy Policy",
-                            icon = Icons.Filled.PanTool,
-                            onClick = { uriHandler.openUri(SILO_PRIVACY_POLICY_URL) },
                         )
                     }
                 }

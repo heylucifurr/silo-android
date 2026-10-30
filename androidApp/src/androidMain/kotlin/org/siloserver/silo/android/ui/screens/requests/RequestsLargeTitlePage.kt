@@ -44,7 +44,7 @@ private val TitleHandoff = 44.dp
 @Composable
 internal fun RequestsLargeTitlePage(
     title: String,
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)?,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,

@@ -342,7 +342,7 @@ class SiloCastController(
 
     /**
      * The remembered Roku when DNS-SD has not found it, so the picker can say
-     * "Open Silo on your Roku". Rokus cannot be launched from a phone.
+     * "Open Weflix on your Roku". Rokus cannot be launched from a phone.
      */
     fun missingRememberedRoku(): SiloCastPersistedTarget? {
         val remembered = lastTargetStore.load()?.takeIf { it.isRoku } ?: return null
@@ -980,7 +980,7 @@ class SiloCastController(
 
     private fun pairingProblem(target: SiloCastTarget): String? {
         val key = pairingKeyFor(target.deviceId)
-            ?: return "${target.name} requires pairing. On the Roku, open Silo's profile menu, choose " +
+            ?: return "${target.name} requires pairing. On the Roku, open Weflix's profile menu, choose " +
                 "Connect a Phone, and scan its code with this phone's camera."
         // TXT `kid` names the Roku's current key; a reset draws a new one.
         if (target.keyId != null && target.keyId != SiloCastSealed.keyId(key)) return pairingChangedMessage(target)
@@ -991,7 +991,7 @@ class SiloCastController(
         "${target.name}'s pairing code has changed. Scan the new code on its Connect a Phone screen."
 
     private fun openSiloOnRokuMessage(target: SiloCastTarget) =
-        "Can't reach ${target.name}. Open Silo on your Roku."
+        "Can't reach ${target.name}. Open Weflix on your Roku."
 
     private fun makeHello(passive: Boolean): SiloCastHello {
         val server = serverRegistry.activeEntry.value
@@ -1015,7 +1015,7 @@ class SiloCastController(
         replaceConsent: SiloCastReplaceConsent?,
     ) {
         val version = awaitHandoffStep(VERSION_TIMEOUT_MS, "The TV did not respond.") { negotiatedVersion.await() }
-        require(version == SiloCastProtocol.version) { "Update Silo on both devices to use Remote Control." }
+        require(version == SiloCastProtocol.version) { "Update Weflix on both devices to use Remote Control." }
 
         val server = serverRegistry.activeEntry.value
             ?: error("Choose a server before controlling a TV.")
@@ -1023,7 +1023,7 @@ class SiloCastController(
         val profileId = tokenManager.getProfileId()?.takeIf { it.isNotBlank() }
             ?: error("Choose a profile before controlling a TV.")
         val scope = tokenManager.snapshotCurrentScope()
-            ?: error("The active Silo account is unavailable.")
+            ?: error("The active Weflix account is unavailable.")
         require(scope.serverId == server.id) { "The active server changed before playback started." }
 
         val handoff = PendingHandoff(requestId = UUID.randomUUID().toString())
@@ -1146,7 +1146,7 @@ class SiloCastController(
                 } else {
                     val target = _state.value.connectedTarget
                     val reason = if (target?.isRoku == true) {
-                        "Lost connection to ${target.name}. Open Silo on your Roku."
+                        "Lost connection to ${target.name}. Open Weflix on your Roku."
                     } else {
                         "Lost connection to the TV."
                     }

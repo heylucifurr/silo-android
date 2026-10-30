@@ -8,9 +8,9 @@ import org.siloserver.silo.repository.WatchPartyEndReason
 
 /** Plain-language reason this device's Watch Party ended. */
 internal fun tvWatchPartyEndedMessage(reason: String): String = when (reason) {
-    WatchPartyEndReason.Replaced -> "This profile joined the Watch Party on another device."
+    WatchPartyEndReason.Replaced -> "This profile joined the Weflix Party on another device."
     WatchPartyEndReason.ConnectionLost -> "Lost connection to the party."
-    else -> "The Watch Party has ended."
+    else -> "The Weflix Party has ended."
 }
 
 /** A member's name for display; the server may omit it. */

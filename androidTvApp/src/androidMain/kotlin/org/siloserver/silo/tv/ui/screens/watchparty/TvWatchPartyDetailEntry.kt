@@ -93,7 +93,7 @@ internal fun rememberTvWatchPartyDetailOption(
     if (current == null) {
         if (!watchPartyHostingOffered(available)) return null
         return TvWatchPartyDetailOption(
-            title = "Watch Party",
+            title = "Weflix Party",
             subtitle = "Host a party with this title",
             onSelect = { entry.request = TvDetailPartyRequest.Host(item) },
         )
@@ -360,8 +360,8 @@ internal fun rememberTvWatchPartyPlayGuard(
 internal fun TvWatchPartyPlayGuardDialog(guard: TvWatchPartyPlayGuard) {
     if (guard.pending == null) return
     TvWatchPartyConfirmDialog(
-        title = "Leave the Watch Party to play this?",
-        message = "You're in a Watch Party. Leaving it stops the party on this TV.",
+        title = "Leave the Weflix Party to play this?",
+        message = "You're in a Weflix Party. Leaving it stops the party on this TV.",
         confirmLabel = "Leave and play",
         onConfirm = guard::confirm,
         onDismiss = guard::cancel,

@@ -39,8 +39,6 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.ClosedCaption
-import androidx.compose.material.icons.outlined.Dns
-import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material.icons.filled.ChevronRight
@@ -128,7 +126,6 @@ import org.siloserver.silo.model.settings.pointSize
 import org.siloserver.silo.tv.BuildConfig
 import org.siloserver.silo.tv.R
 import org.siloserver.silo.common.R as CommonR
-import org.siloserver.silo.tv.ui.screens.settings.diagnostics.TvPrivacyPolicyDialog
 import org.siloserver.silo.common.ui.components.ProfileAvatarRef
 import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.common.ui.components.profileAvatarDisplayText
@@ -137,8 +134,6 @@ import androidx.compose.ui.layout.ContentScale
 import org.siloserver.silo.common.profiles.ProfileLaunchBehavior
 import org.siloserver.silo.tv.data.preferences.SubtitleMode
 import org.siloserver.silo.tv.ui.screens.player.TvSubtitleAppearanceOptions
-import org.siloserver.silo.tv.ui.screens.settings.diagnostics.TvDiagnosticsSettingsPane
-import org.siloserver.silo.tv.ui.screens.settings.diagnostics.TvDiagnosticsViewModel
 import org.siloserver.silo.tv.ui.theme.FocusedContainer
 import org.siloserver.silo.tv.ui.theme.FocusedContent
 import org.siloserver.silo.tv.ui.theme.Spacing
@@ -159,20 +154,14 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvSettingsScreen(
-    onManageServers: () -> Unit = {},
     onSignedOut: () -> Unit = {},
     onSwitchProfile: () -> Unit = {},
     onNavigateHome: () -> Unit = {},
-    onOpenDiagnosticsReport: (reportId: String) -> Unit = {},
     onInitialContentFocus: () -> Unit = {},
-    initialManageServersFocus: Boolean = false,
-    onManageServersReturnFocusConsumed: () -> Unit = {},
     viewModel: TvSettingsViewModel = koinViewModel(),
-    diagnosticsViewModel: TvDiagnosticsViewModel = koinViewModel(),
     homeSectionsViewModel: HomeViewModel = koinViewModel(key = "settings-home-sections"),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val diagnosticsState by diagnosticsViewModel.state.collectAsState()
     val metadataAiStore: org.siloserver.silo.model.feature.MetadataAiFeatureStore =
         org.koin.compose.koinInject()
     val metadataAiStatus by metadataAiStore.status.collectAsState()
@@ -185,9 +174,7 @@ fun TvSettingsScreen(
     // Saveable so a drill-out to the pending-report route and back returns to
     // the category the viewer was reading, not to General.
     var selectedCategory by rememberSaveable {
-        mutableStateOf(
-            if (initialManageServersFocus) TvSettingsCategory.Server else TvSettingsCategory.General,
-        )
+        mutableStateOf(TvSettingsCategory.General)
     }
     var detailHasFocus by remember { mutableStateOf(false) }
     var categoryColumnHasFocus by remember { mutableStateOf(false) }
@@ -218,34 +205,11 @@ fun TvSettingsScreen(
             // unconditionally undid the restore, because that row's onFocused
             // resets the selection on the way in.
             requestFocus = {
-                if (initialManageServersFocus) {
-                    detailFocusRequester.requestFocus()
-                } else {
-                    categoryFocusRequesters.getValue(selectedCategory).requestFocus()
-                }
+                categoryFocusRequesters.getValue(selectedCategory).requestFocus()
             },
             isFocused = { categoryColumnHasFocus },
         ) == TvObservedFocusResult.Focused
-        if (initialManageServersFocus && focusRestored) onManageServersReturnFocusConsumed()
         if (focusRestored) onInitialContentFocus()
-    }
-
-    // tvOS parity: eligibility can flip while Settings is open (profile switch,
-    // server capability refresh). Falling back keeps the pane and the rail in
-    // agreement instead of stranding focus in a category that just vanished.
-    LaunchedEffect(diagnosticsState.profileEligible) {
-        val fallback = tvSettingsCategoryForEligibility(
-            selectedCategory,
-            diagnosticsState.profileEligible,
-        )
-        if (fallback == selectedCategory) return@LaunchedEffect
-        selectedCategory = fallback
-        // Swapping the model is not enough: the row (or detail control) holding
-        // focus is the one that just left the rail, and Compose clears focus
-        // rather than re-homing it, which leaves the remote with nothing to
-        // move from. The fallback's row is always composed, so claim it here.
-        categoryFocusRequesters.getValue(fallback)
-            .claimFocusOrReport(target = "settings_category", action = "eligibility_fallback")
     }
 
     LaunchedEffect(detailFocusRequest) {
@@ -284,8 +248,6 @@ fun TvSettingsScreen(
 
     SettingsSplitLayout(
         state = state,
-        diagnosticsState = diagnosticsState,
-        diagnosticsViewModel = diagnosticsViewModel,
         homeSectionsViewModel = homeSectionsViewModel,
         selectedCategory = selectedCategory,
         categoryFocusRequesters = categoryFocusRequesters,
@@ -298,8 +260,6 @@ fun TvSettingsScreen(
             detailFocusRequest += 1
         },
         onSwitchProfile = viewModel::onSwitchProfile,
-        onManageServers = onManageServers,
-        onOpenDiagnosticsReport = onOpenDiagnosticsReport,
         onRequestSignOut = { showSignOutConfirm = true },
         onResolutionSelected = viewModel::onResolutionSelected,
         onMaxBitrateSelected = viewModel::onMaxBitrateSelected,
@@ -391,43 +351,7 @@ internal enum class TvSettingsCategory(
         blurb = "Language, behavior, and on-screen appearance.",
         icon = Icons.Outlined.ClosedCaption,
     ),
-    Diagnostics(
-        title = "Diagnostics",
-        railDescription = "Reports and support",
-        blurb = "Review and send diagnostics to this Silo server.",
-        icon = Icons.Outlined.MonitorHeart,
-    ),
-    Server(
-        title = "Server",
-        railDescription = "Connection and version",
-        blurb = "The Silo server this Android TV is connected to.",
-        icon = Icons.Outlined.Dns,
-    ),
 }
-
-/**
- * tvOS `visibleCategories`: Diagnostics is hidden outright for a profile that
- * may not manage diagnostics (a kids profile, or a server that hides it).
- */
-internal fun tvSettingsVisibleCategories(diagnosticsEligible: Boolean): List<TvSettingsCategory> =
-    TvSettingsCategory.entries.filter {
-        it != TvSettingsCategory.Diagnostics || diagnosticsEligible
-    }
-
-/**
- * tvOS `.onChange(of: shouldShowSettings)`: if the category being shown stops
- * being visible, fall back to General rather than leaving the pane rendering a
- * category the rail no longer offers.
- */
-internal fun tvSettingsCategoryForEligibility(
-    current: TvSettingsCategory,
-    diagnosticsEligible: Boolean,
-): TvSettingsCategory =
-    if (current in tvSettingsVisibleCategories(diagnosticsEligible)) {
-        current
-    } else {
-        TvSettingsCategory.General
-    }
 
 private val LocalSettingsDetailFocusReporter = staticCompositionLocalOf<(Boolean) -> Unit> { {} }
 
@@ -439,8 +363,6 @@ private val LocalSettingsDetailFocusReporter = staticCompositionLocalOf<(Boolean
 @Composable
 private fun SettingsSplitLayout(
     state: TvSettingsViewModel.UiState,
-    diagnosticsState: org.siloserver.silo.common.diagnostics.DiagnosticsUiState,
-    diagnosticsViewModel: TvDiagnosticsViewModel,
     homeSectionsViewModel: HomeViewModel,
     selectedCategory: TvSettingsCategory,
     categoryFocusRequesters: Map<TvSettingsCategory, FocusRequester>,
@@ -454,8 +376,6 @@ private fun SettingsSplitLayout(
     onShowAudiobooksTabChanged: (Boolean) -> Unit,
     onProfileLaunchBehaviorChanged: (ProfileLaunchBehavior) -> Unit,
     onSwitchProfile: () -> Unit,
-    onManageServers: () -> Unit,
-    onOpenDiagnosticsReport: (reportId: String) -> Unit,
     onRequestSignOut: () -> Unit,
     /** Receives a [QualityChoices.RESOLUTIONS] value. */
     onResolutionSelected: (String) -> Unit,
@@ -521,7 +441,7 @@ private fun SettingsSplitLayout(
     ) {
         SettingsRail(
             state = state,
-            visibleCategories = tvSettingsVisibleCategories(diagnosticsState.profileEligible),
+            visibleCategories = TvSettingsCategory.entries,
             selectedCategory = selectedCategory,
             categoryFocusRequesters = categoryFocusRequesters,
             detailFocusRequester = detailFocusRequester,
@@ -537,16 +457,12 @@ private fun SettingsSplitLayout(
         )
         SettingsDetailPane(
             state = state,
-            diagnosticsState = diagnosticsState,
-            diagnosticsViewModel = diagnosticsViewModel,
             homeSectionsViewModel = homeSectionsViewModel,
             selectedCategory = selectedCategory,
             detailFocusRequester = detailFocusRequester,
             onDetailFocusChanged = onDetailFocusChanged,
             onShowAudiobooksTabChanged = onShowAudiobooksTabChanged,
             onProfileLaunchBehaviorChanged = onProfileLaunchBehaviorChanged,
-            onManageServers = onManageServers,
-            onOpenDiagnosticsReport = onOpenDiagnosticsReport,
             onResolutionSelected = onResolutionSelected,
             onMaxBitrateSelected = onMaxBitrateSelected,
             onAudioLanguageChanged = onAudioLanguageChanged,
@@ -639,7 +555,7 @@ private fun SettingsRail(
             modifier = Modifier.padding(start = 12.dp, bottom = 10.dp),
         )
         SettingsAccountRow(
-            name = state.profileName ?: state.user?.username ?: "Silo",
+            name = state.profileName ?: state.user?.username ?: "weflix",
             subtitle = accountSubtitle(state),
             avatar = state.profileAvatar,
             onClick = onSwitchProfile,
@@ -670,7 +586,7 @@ private fun SettingsRail(
             onFocused = { railActionHasFocus = true },
         )
         Text(
-            text = "Silo ${clientVersionLabel(BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER)}",
+            text = "weflix ${clientVersionLabel(BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER)}",
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 18.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(start = 12.dp, top = 6.dp),
@@ -826,16 +742,12 @@ private fun SettingsRailActionRow(
 @Composable
 private fun SettingsDetailPane(
     state: TvSettingsViewModel.UiState,
-    diagnosticsState: org.siloserver.silo.common.diagnostics.DiagnosticsUiState,
-    diagnosticsViewModel: TvDiagnosticsViewModel,
     homeSectionsViewModel: HomeViewModel,
     selectedCategory: TvSettingsCategory,
     detailFocusRequester: FocusRequester,
     onDetailFocusChanged: (Boolean) -> Unit,
     onShowAudiobooksTabChanged: (Boolean) -> Unit,
     onProfileLaunchBehaviorChanged: (ProfileLaunchBehavior) -> Unit,
-    onManageServers: () -> Unit,
-    onOpenDiagnosticsReport: (reportId: String) -> Unit,
     /** Receives a [QualityChoices.RESOLUTIONS] value. */
     onResolutionSelected: (String) -> Unit,
     /** Receives a [QualityChoices.bitrateChoices] value; null is no limit. */
@@ -945,26 +857,6 @@ private fun SettingsDetailPane(
                 onResetSubtitleAppearance = onResetSubtitleAppearance,
                 onSubtitleDeviceOverrideEnabledChanged = onSubtitleDeviceOverrideEnabledChanged,
             onSubtitleMatchesDeviceChanged = onSubtitleMatchesDeviceChanged,
-            )
-            TvSettingsCategory.Diagnostics -> TvDiagnosticsSettingsPane(
-                state = diagnosticsState,
-                serverName = state.serverName,
-                firstFocusRequester = detailFocusRequester,
-                onSetDestination = diagnosticsViewModel::setDestination,
-                onSetConsent = diagnosticsViewModel::setConsent,
-                onSetDebugLogging = diagnosticsViewModel::setDebugLogging,
-                onCaptureNow = { diagnosticsViewModel.captureNow(onOpenDiagnosticsReport) },
-                onStartTimedCapture = diagnosticsViewModel::startTimedCapture,
-                onStopTimedCapture = {
-                    diagnosticsViewModel.stopTimedCapture(onOpenDiagnosticsReport)
-                },
-                onCancelTimedCapture = diagnosticsViewModel::cancelTimedCapture,
-                onReportSelected = onOpenDiagnosticsReport,
-            )
-            TvSettingsCategory.Server -> TvServerSettingsPane(
-                state = state,
-                firstFocusRequester = detailFocusRequester,
-                onManageServers = onManageServers,
             )
         }
       }
@@ -1129,6 +1021,9 @@ private fun TvGeneralSettingsPane(
         // For You dropdown (Watchlist/Favorites), the profile menu
         // (Watchlist/Favorites/History), Home (Browse), and each library's
         // cascade (Collections). (QA 2026-07-08.)
+        // No About group here. The rail footer already names the build
+        // ("weflix 1.0.0 (5)"), and an info-only group trailing the last
+        // focusable row cannot be reached with the remote.
     }
 
     if (showPosterSizePicker) {
@@ -1334,7 +1229,7 @@ private fun TvPlaybackSettingsPane(
                         "support. It does not force the HDMI output into HDR; Android may still convert " +
                         "the picture to SDR. Enable it only if you've confirmed your TV supports the " +
                         "source format. Unsupported formats may produce a black screen or incorrect colors." +
-                        " True Black Bars stops Silo from drawing the bars around the picture during " +
+                        " True Black Bars stops weflix from drawing the bars around the picture during " +
                         "playback. Try it if they look grey in HDR or Dolby Vision, and turn it off again " +
                         "if they get lighter or show a thin line.",
                 )
@@ -1407,7 +1302,7 @@ private fun TvPlaybackSettingsPane(
                 )
                 SettingsFooterText(
                     text = "Rewind on Resume skips back when you return to a partly watched title. Still " +
-                        "Watching Prompt sets how many episodes play in a row before Silo asks whether " +
+                        "Watching Prompt sets how many episodes play in a row before weflix asks whether " +
                         "you're still watching.",
                 )
             }
@@ -1913,7 +1808,7 @@ private fun TvSubtitleSettingsPane(
                         onClick = { activePicker = SubtitlePicker.MetadataLanguage },
                     )
                     SettingsFooterText(
-                        text = "Fallback language Silo prefers for titles, descriptions, and artwork.",
+                        text = "Fallback language weflix prefers for titles, descriptions, and artwork.",
                     )
                 }
             }
@@ -2231,59 +2126,6 @@ private fun TvSettingsSubtitlePreview(appearance: SubtitleAppearance) {
     }
 }
 
-@Composable
-private fun TvServerSettingsPane(
-    state: TvSettingsViewModel.UiState,
-    firstFocusRequester: FocusRequester,
-    onManageServers: () -> Unit,
-) {
-    var showPrivacyPolicy by remember { mutableStateOf(false) }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding = PaddingValues(bottom = Spacing.xxxl),
-    ) {
-        item {
-            SettingsGroup(title = "Active Server") {
-                SettingsInfoRow(
-                    label = "Server",
-                    value = state.serverName.ifBlank { "Not configured" },
-                )
-                if (state.serverUrl.isNotBlank() && state.serverName != state.serverUrl) {
-                    SettingsInfoRow(label = "Address", value = state.serverUrl, singleLine = false)
-                }
-                SettingsActionRow(
-                    label = "Manage Servers",
-                    onClick = onManageServers,
-                    focusRequester = firstFocusRequester,
-                )
-            }
-        }
-        // Diagnostics used to hang off this pane as a "Diagnostics & Crash
-        // Reports" drill-in to a route outside the shell. It is its own
-        // category now (tvOS parity), so nothing here points at it.
-        item {
-            SettingsGroup(title = "About") {
-                // Same "1.0.0 (5)" form as the phone About row, so a TV support
-                // report names the build the server's admin Activity page shows.
-                SettingsInfoRow(
-                    label = "App Version",
-                    value = clientVersionLabel(BuildConfig.VERSION_NAME, BuildConfig.BUILD_NUMBER),
-                )
-                // tvOS About: the policy as a QR code, for a device with a browser.
-                SettingsActionRow(
-                    label = "Privacy Policy",
-                    onClick = { showPrivacyPolicy = true },
-                )
-            }
-        }
-    }
-
-    if (showPrivacyPolicy) {
-        TvPrivacyPolicyDialog(onDismiss = { showPrivacyPolicy = false })
-    }
-}
-
 private const val SubtitlePreviewText = "Subtitles will look like this"
 
 private fun settingsHexColor(value: String): Color = runCatching {
@@ -2576,12 +2418,12 @@ private fun TvExperimentalSettingsGroup(
     val watchPartyEnabled by watchPartyExperiment.enabled.collectAsState()
     SettingsGroup(title = "Experimental") {
         SettingsToggleRow(
-            label = "Watch Party",
+            label = "Weflix Party",
             checked = watchPartyEnabled,
             onCheckedChange = watchPartyExperiment::setEnabled,
         )
         SettingsFooterText(
-            text = "Try Watch Party before it's finished. Turning it off leaves any party you're in.",
+            text = "Try Weflix Party before it's finished. Turning it off leaves any party you're in.",
         )
     }
 }

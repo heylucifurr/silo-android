@@ -58,7 +58,7 @@ fun SiloCastMiniBar(
     val playback = state.playbackState
     val launch = state.launch
     val isIdle = playback?.contentId.isNullOrEmpty()
-    val targetName = state.connectedTarget?.name ?: "Silo TV"
+    val targetName = state.connectedTarget?.name ?: "Weflix TV"
     // Keep the bar up through a reconnect (with a spinner) instead of having
     // it vanish and pop back; hide it while an auto-resume probe is still
     // unconfirmed so idle TVs never surface a phantom session.

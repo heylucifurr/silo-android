@@ -37,10 +37,10 @@ private const val INVITE_ID_BYTES = 12
 
 /** What the lobby and player say when this device's party ended. */
 internal fun watchPartyEndedMessage(reason: String): String = when (reason) {
-    WatchPartyEndReason.Replaced -> "This profile joined the Watch Party on another device."
+    WatchPartyEndReason.Replaced -> "This profile joined the Weflix Party on another device."
     WatchPartyEndReason.ConnectionLost -> "Lost connection to the party."
-    WatchPartyEndReason.Unauthorized -> "Sign in again to use Watch Party."
-    else -> "The Watch Party has ended."
+    WatchPartyEndReason.Unauthorized -> "Sign in again to use Weflix Party."
+    else -> "The Weflix Party has ended."
 }
 
 /** The party itself goes on after these, so the hub offers Rejoin. */
@@ -94,9 +94,9 @@ private fun RoomMember.isSameMemberAs(other: RoomMember): Boolean =
 /** Share text: the host's invitation link with the code, or the code alone for guests. */
 internal fun watchPartyShareText(code: String, inviteUrl: String?): String =
     if (inviteUrl != null) {
-        "Join my Watch Party on Silo: $inviteUrl\nOr enter the code $code."
+        "Join my Weflix Party on Silo: $inviteUrl\nOr enter the code $code."
     } else {
-        "Join my Watch Party on Silo with the code $code."
+        "Join my Weflix Party on Silo with the code $code."
     }
 
 /** Quality chips for the staged version, for example "4K" and "HDR". */

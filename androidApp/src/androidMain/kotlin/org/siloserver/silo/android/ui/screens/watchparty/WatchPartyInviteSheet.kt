@@ -72,10 +72,10 @@ internal fun WatchPartyInviteSheet(
     fun share(text: String) {
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Join my Silo Watch Party")
+            putExtra(Intent.EXTRA_SUBJECT, "Join my Silo Weflix Party")
             putExtra(Intent.EXTRA_TEXT, text)
         }
-        context.startActivity(Intent.createChooser(send, "Share Watch Party invitation"))
+        context.startActivity(Intent.createChooser(send, "Share Weflix Party invitation"))
     }
 
     ModalBottomSheet(
@@ -104,7 +104,7 @@ internal fun WatchPartyInviteSheet(
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    "Anyone with a profile on this Silo server can enter it from Watch Party.",
+                    "Anyone with a profile on this Silo server can enter it from Weflix Party.",
                     fontSize = WatchPartyMetrics.BODY.sp,
                     color = SiloSecondaryText,
                     textAlign = TextAlign.Center,

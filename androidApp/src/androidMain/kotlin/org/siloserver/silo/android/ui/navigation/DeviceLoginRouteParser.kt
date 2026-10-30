@@ -139,9 +139,9 @@ internal fun deviceLoginOriginMatchesServer(
 }
 
 private fun URI.isDeviceLoginUri(): Boolean {
-    val scheme = scheme?.lowercase()
+    val scheme = scheme?.lowercase() ?: return false
     return when (scheme) {
-        "silo" -> host.equals("device", ignoreCase = true)
+        in APP_LINK_SCHEMES -> host.equals("device", ignoreCase = true)
         "http", "https" -> normalizedPath.endsWith("/device") || normalizedPath.endsWith("/activate")
         else -> false
     }

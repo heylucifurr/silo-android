@@ -358,7 +358,7 @@ internal fun RequestsSectionHeader(
 internal fun RequestsLargeTitleBar(
     title: String,
     titleProgress: Float,
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     actions: @Composable () -> Unit = {},
 ) {
@@ -370,16 +370,19 @@ internal fun RequestsLargeTitleBar(
             .height(56.dp)
             .padding(horizontal = 16.dp),
     ) {
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(SiloOverlayPillSurface)
-                .border(1.dp, SiloNavPillBorder, CircleShape),
-        ) {
-            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+        // Null on the tab body: a tab is not somewhere you go back from.
+        if (onBackClick != null) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(SiloOverlayPillSurface)
+                    .border(1.dp, SiloNavPillBorder, CircleShape),
+            ) {
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
         }
         Text(
             text = title,

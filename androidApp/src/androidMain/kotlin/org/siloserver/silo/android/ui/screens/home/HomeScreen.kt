@@ -134,11 +134,10 @@ fun HomeScreen(
     onRemoteChooseTvClick: () -> Unit,
     onRemoteDisconnectClick: () -> Unit,
     isRemoteControlActive: Boolean,
-    onRequestsClick: (() -> Unit)?,
+    onCalendarClick: (() -> Unit)?,
     onWatchPartyClick: (() -> Unit)?,
     onSettingsClick: () -> Unit,
     onSwitchProfileClick: () -> Unit,
-    onSwitchServerClick: () -> Unit,
     onSignOutClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -486,11 +485,10 @@ fun HomeScreen(
             onRemoteChooseTvClick = onRemoteChooseTvClick,
             onRemoteDisconnectClick = onRemoteDisconnectClick,
             isRemoteControlActive = isRemoteControlActive,
-            onRequestsClick = onRequestsClick,
+            onCalendarClick = onCalendarClick,
             onWatchPartyClick = onWatchPartyClick,
             onSettingsClick = onSettingsClick,
             onSwitchProfileClick = onSwitchProfileClick,
-            onSwitchServerClick = onSwitchServerClick,
             onSignOutClick = onSignOutClick,
         )
 
@@ -523,11 +521,10 @@ private fun HomeFloatingChrome(
     onRemoteChooseTvClick: () -> Unit,
     onRemoteDisconnectClick: () -> Unit,
     isRemoteControlActive: Boolean,
-    onRequestsClick: (() -> Unit)?,
+    onCalendarClick: (() -> Unit)?,
     onWatchPartyClick: (() -> Unit)?,
     onSettingsClick: () -> Unit,
     onSwitchProfileClick: () -> Unit,
-    onSwitchServerClick: () -> Unit,
     onSignOutClick: () -> Unit,
 ) {
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
@@ -543,11 +540,10 @@ private fun HomeFloatingChrome(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 activeProfile = activeProfile,
                 onSearchClick = onSearchClick,
-                onRequestsClick = onRequestsClick,
+                onCalendarClick = onCalendarClick,
                 onWatchPartyClick = onWatchPartyClick,
                 onSettingsClick = onSettingsClick,
                 onSwitchProfileClick = onSwitchProfileClick,
-                onSwitchServerClick = onSwitchServerClick,
                 onSignOutClick = onSignOutClick,
                 leadingActions = {
                     // Mirrors Apple's SiloControlModeButton: chrome-free at rest,

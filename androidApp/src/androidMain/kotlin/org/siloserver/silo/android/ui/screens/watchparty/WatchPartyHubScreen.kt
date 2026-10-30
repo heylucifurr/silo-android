@@ -158,8 +158,8 @@ fun WatchPartyHubScreen(
     // before joining, creating, or consuming a detail/invitation handoff.
     if (enabled && casting) {
         SiloConfirmDialog(
-            title = "Stop casting to use Watch Party?",
-            body = "Casting will stop. Watch Party plays on this device.",
+            title = "Stop casting to use Weflix Party?",
+            body = "Casting will stop. Weflix Party plays on this device.",
             confirmLabel = "Stop casting",
             onConfirm = castManager::disconnect,
             onDismiss = onBack,
@@ -212,16 +212,16 @@ fun WatchPartyHubScreen(
                             )
                         }
                         if (!enabled) {
-                            WatchPartyBanner("Watch Party is turned off. Turn it on in Settings, under Experimental.")
+                            WatchPartyBanner("Weflix Party is turned off. Turn it on in Settings, under Experimental.")
                         } else {
                             when (state.availability) {
-                                null -> WatchPartyBanner("Checking Watch Party support…")
+                                null -> WatchPartyBanner("Checking Weflix Party support…")
                                 is WatchPartyAvailability.Unsupported ->
-                                    WatchPartyBanner("This server doesn't support Watch Party yet.")
+                                    WatchPartyBanner("This server doesn't support Weflix Party yet.")
                                 WatchPartyAvailability.NotAllowed ->
-                                    WatchPartyBanner("Your account can't use Watch Party.")
+                                    WatchPartyBanner("Your account can't use Weflix Party.")
                                 is WatchPartyAvailability.ProbeFailed -> WatchPartyBanner(
-                                    "Couldn't check whether this server supports Watch Party.",
+                                    "Couldn't check whether this server supports Weflix Party.",
                                     tone = WatchPartyBannerTone.Warning,
                                 )
                                 is WatchPartyAvailability.Available -> Unit
@@ -269,7 +269,7 @@ fun WatchPartyHubScreen(
 
                 if (current != null) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        WatchPartyEyebrow("You're in a Watch Party")
+                        WatchPartyEyebrow("You're in a Weflix Party")
                         if (current.code.isNotBlank()) {
                             Text(
                                 current.code,
@@ -323,7 +323,7 @@ fun WatchPartyHubScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     } else {
-                        WatchPartyBanner(text = "This server can't host a Watch Party. You can still join one.")
+                        WatchPartyBanner(text = "This server can't host a Weflix Party. You can still join one.")
                     }
                     state.recent?.takeIf { !endedRejoin }?.let { recent ->
                         WatchPartyButton(
@@ -398,7 +398,7 @@ fun WatchPartyHubScreen(
 @Composable
 private fun HubHeadline(modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy((WatchPartyMetrics.BODY * 0.6f).dp)) {
-        WatchPartyEyebrow("Watch Party")
+        WatchPartyEyebrow("Weflix Party")
         WatchPartyHeroTitle("Watch something\ntogether")
         Text(
             "Pick a title, share the code, and everyone's playback stays in step.",

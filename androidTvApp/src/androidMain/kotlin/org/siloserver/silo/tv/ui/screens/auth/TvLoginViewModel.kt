@@ -513,11 +513,6 @@ class TvLoginViewModel(
         startDeviceLogin()
     }
 
-    /** "Change server": withdraw the code before this screen goes away. */
-    fun onChangeServer() {
-        abandonDeviceCode()
-    }
-
     private fun startDeviceLogin() {
         deviceLoginJob?.cancel()
         deviceLoginJob = viewModelScope.launch {

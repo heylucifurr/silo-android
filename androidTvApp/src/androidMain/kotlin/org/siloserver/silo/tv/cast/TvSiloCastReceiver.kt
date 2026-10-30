@@ -739,7 +739,7 @@ class TvSiloCastReceiver(
                 SiloCastMessage.Error(
                     SiloCastError(
                         code = "version_unsupported",
-                        message = "Update Silo on both devices to continue.",
+                        message = "Update weflix on both devices to continue.",
                     ),
                 ),
             )
@@ -785,7 +785,7 @@ class TvSiloCastReceiver(
                 session,
                 offer.requestId,
                 SiloCastHandoffCancelReason.WatchPartyActive,
-                "Leave the Watch Party on the TV first.",
+                "Leave the Weflix Party on the TV first.",
             )
             return
         }
@@ -795,7 +795,7 @@ class TvSiloCastReceiver(
                 session,
                 offer.requestId,
                 SiloCastHandoffCancelReason.VersionUnsupported,
-                "Update Silo on both devices to continue.",
+                "Update weflix on both devices to continue.",
             )
             return
         }
@@ -1037,7 +1037,7 @@ class TvSiloCastReceiver(
         if (inWatchParty()) {
             session.send(
                 SiloCastMessage.Error(
-                    SiloCastError(code = "watch_party_active", message = "Leave the Watch Party on the TV first."),
+                    SiloCastError(code = "watch_party_active", message = "Leave the Weflix Party on the TV first."),
                 ),
             )
             return

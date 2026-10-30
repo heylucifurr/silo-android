@@ -44,7 +44,7 @@ import org.siloserver.silo.tv.R
 @Composable
 fun TvMarqueeSetupSteps(modifier: Modifier = Modifier) {
     Column(modifier.width(350.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
-        Step(1, "Open Silo on your phone") { AppIconPicture() }
+        Step(1, "Open weflix on your phone") { AppIconPicture() }
         Step(2, "Tap Set up") { SetupCardPicture() }
         Step(3, "Finish on your phone") { DonePicture() }
     }
@@ -82,7 +82,7 @@ private fun Step(number: Int, title: String, picture: @Composable () -> Unit) {
     }
 }
 
-/** The Silo app icon: the mark on the deep blue field. */
+/** The weflix app icon: the wordmark on the brand plate. */
 @Composable
 private fun AppIconPicture() {
     Box(
@@ -93,17 +93,19 @@ private fun AppIconPicture() {
             .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(11.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        // The icon draws the mark at 84% of its height.
+        // Mirrors the launcher icon, so the picture matches the icon the person
+        // is about to tap on their phone: the lockup inside the plate's safe
+        // area, not the old mark.
         Image(
-            painter = painterResource(R.drawable.silo_mark),
+            painter = painterResource(R.drawable.silo_wordmark),
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = Modifier.height(38.5.dp),
+            modifier = Modifier.width(34.dp),
         )
     }
 }
 
-/** The setup card Silo shows on a nearby phone, with its Set up button ringed. */
+/** The setup card weflix shows on a nearby phone, with its Set up button ringed. */
 @Composable
 private fun SetupCardPicture() {
     Column(

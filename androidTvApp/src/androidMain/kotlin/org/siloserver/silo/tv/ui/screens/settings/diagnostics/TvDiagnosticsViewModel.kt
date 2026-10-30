@@ -67,7 +67,7 @@ internal val TvDiagnosticsDestinations: List<DiagnosticsDestinationKind> = listO
 )
 
 internal fun tvDiagnosticsDestinationTitle(kind: DiagnosticsDestinationKind): String = when (kind) {
-    DiagnosticsDestinationKind.HOSTED -> "Silo Diagnostics"
+    DiagnosticsDestinationKind.HOSTED -> "weflix Diagnostics"
     DiagnosticsDestinationKind.SELF_HOSTED -> "This Silo server"
 }
 
@@ -79,7 +79,7 @@ internal fun tvDiagnosticsDestinationName(
     kind: DiagnosticsDestinationKind,
     serverName: String,
 ): String = when (kind) {
-    DiagnosticsDestinationKind.HOSTED -> "Silo Diagnostics"
+    DiagnosticsDestinationKind.HOSTED -> "weflix Diagnostics"
     DiagnosticsDestinationKind.SELF_HOSTED -> serverName.ifBlank { "This Silo server" }
 }
 

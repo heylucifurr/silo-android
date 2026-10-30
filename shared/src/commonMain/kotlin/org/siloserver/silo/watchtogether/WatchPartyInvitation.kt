@@ -45,7 +45,7 @@ fun parseWatchPartyInvite(input: String): WatchPartyInvite? {
     val scheme = text.substringBefore("://", missingDelimiterValue = "").lowercase()
     return when (scheme) {
         "http", "https" -> parseWebInvite(text)
-        "silo" -> parseAppInvite(text)
+        "weflix", "silo" -> parseAppInvite(text)
         else -> null
     }
 }

@@ -499,7 +499,7 @@ fun PlayerScreen(
         }
         if (present == null) {
             if (!exitRequested && party.ended.value == null) {
-                Toast.makeText(context, "This Watch Party isn't available anymore.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "This Weflix Party isn't available anymore.", Toast.LENGTH_SHORT).show()
                 exitPlayer()
             }
             return@LaunchedEffect

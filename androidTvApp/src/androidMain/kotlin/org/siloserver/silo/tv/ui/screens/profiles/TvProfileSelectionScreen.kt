@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -92,9 +91,10 @@ private val ProfileColumnGap = 14.dp
 /**
  * "Who's watching?" on Android TV (silo-apple `ProfileSelectionView` on
  * tvOS): round avatars centered over the brand light, "Signed in as", and
- * the utilities (change server, sign out, and manage) small and
- * below the people. A PIN prompt opens full screen over the same light,
- * tinted with that person's color.
+ * the utilities (sign out and manage) small and below the people. A PIN prompt
+ * opens full screen over the same light, tinted with that person's color.
+ *
+ * There is no "Change server" button in this build; the server is fixed.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -102,7 +102,6 @@ fun TvProfileSelectionScreen(
     onProfileSelected: () -> Unit,
     onAddProfile: () -> Unit = {},
     onEditProfile: (String) -> Unit = {},
-    onChangeServer: () -> Unit = {},
     onSignOut: () -> Unit = {},
     viewModel: TvProfileSelectionViewModel = koinViewModel(),
 ) {
@@ -294,13 +293,6 @@ fun TvProfileSelectionScreen(
                             )
                         }
                         TvMarqueeButton(
-                            text = "Change server",
-                            onClick = onChangeServer,
-                            kind = TvMarqueeButtonKind.Glass,
-                            compact = true,
-                            icon = Icons.Outlined.Dns,
-                        )
-                        TvMarqueeButton(
                             text = "Sign out",
                             onClick = onSignOut,
                             kind = TvMarqueeButtonKind.Glass,
@@ -336,13 +328,13 @@ fun TvProfileSelectionScreen(
                 TvDialogOption(
                     key = "remember",
                     title = "Remember",
-                    subtitle = "Open ${rememberOffer.name} when Silo starts on this TV.",
+                    subtitle = "Open ${rememberOffer.name} when weflix starts on this TV.",
                     onClick = { viewModel.answerRememberOffer(remember = true) },
                 ),
                 TvDialogOption(
                     key = "ask",
                     title = "Ask every time",
-                    subtitle = "Show Who's watching when Silo starts. Change this in Settings > General > Profile Selection.",
+                    subtitle = "Show Who's watching when weflix starts. Change this in Settings > General > Profile Selection.",
                     onClick = { viewModel.answerRememberOffer(remember = false) },
                 ),
             ),

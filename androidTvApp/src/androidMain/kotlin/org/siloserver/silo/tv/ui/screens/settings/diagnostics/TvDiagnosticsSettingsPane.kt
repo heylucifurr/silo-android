@@ -70,7 +70,7 @@ import org.siloserver.silo.tv.ui.theme.Spacing
  * It used to be a top-level route outside `TvMainShell`, so the surface had no
  * top bar, no on-screen Back, and no relationship to the rest of Settings.
  *
- * The destination choice ("Silo Diagnostics" vs "This Silo server") used to be
+ * The destination choice ("weflix Diagnostics" vs "This Silo server") used to be
  * a pair of inline rows above the consent ladder, and a hand-rolled
  * `onPreviewKeyEvent` ladder swallowed Up at the top of that ladder — the rows
  * rendered but no D-pad press could ever reach them. tvOS does not have that
@@ -243,7 +243,7 @@ internal fun TvDiagnosticsSettingsPane(
                 )
                 SettingsFooterText(
                     text = if (state.destinationKind == DiagnosticsDestinationKind.HOSTED) {
-                        "Reports include the Silo app version and build, Android version, device model, " +
+                        "Reports include the weflix app version and build, Android version, device model, " +
                             "crash details, and diagnostic logs you review. A pseudonymous installation " +
                             "credential is not linked to an account on your self-hosted server. Username, " +
                             "email, profile, server address, and playback session IDs are omitted. Reports " +

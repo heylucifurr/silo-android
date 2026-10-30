@@ -34,7 +34,7 @@ class VideoPlaybackStartRequestTest {
         )
         val cases = listOf(
             "a default play" to (base to null),
-            "a Watch Party room" to (base.copy(room = room) to false),
+            "a Weflix Party room" to (base.copy(room = room) to false),
             "a version the viewer chose" to (base.copy(versionChosen = true) to false),
             "a renewal of a pinned start" to (base.copy(recoveryStartParams = renewal(false)) to false),
             "a renewal of a default play" to (base.copy(recoveryStartParams = renewal(null)) to null),

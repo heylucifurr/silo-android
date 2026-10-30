@@ -19,7 +19,7 @@ internal fun inviteClaimRouteOrNull(rawUri: String?): String? {
         ?.let { runCatching { URI(it) }.getOrNull() }
         ?: return null
 
-    if (!uri.scheme.equals("silo", ignoreCase = true)) return null
+    if (uri.scheme?.lowercase() !in APP_LINK_SCHEMES) return null
     if (!uri.host.equals("invite", ignoreCase = true)) return null
 
     // Any other app can hand the exported activity a malformed URI via

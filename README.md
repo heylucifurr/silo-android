@@ -2,7 +2,7 @@
 
 Android **phone** and **Android TV** clients for the [Silo](https://github.com/Silo-Server/silo-server) self-hosted media server — stream and download your movies, shows, music, audiobooks, and ebooks, with quality-aware playback and multi-server/multi-profile support.
 
-Built as a Kotlin Multiplatform project: one shared business-logic core, two Jetpack Compose apps (touch + 10-foot TV). This branch uses the full Silo namespace cut: Kotlin packages live under `org.siloserver.silo`, and both apps share a single application ID `org.siloserver.silo` so they publish as one Google Play listing (Play routes each build by manifest feature filtering). Installs under legacy IDs do not upgrade in place; users should expect a fresh app install, sign-in, and offline media download.
+Built as a Kotlin Multiplatform project: one shared business-logic core, two Jetpack Compose apps (touch + 10-foot TV). This branch is rebranded to **weflix**: the app name and visible copy read `weflix`, the launcher label is `weflix`, and both apps share one application ID, `me.weflix`, so they publish as one Google Play listing (Play routes each build by manifest feature filtering). Kotlin packages still live under `org.siloserver.silo`, and the `silo://` deep-link scheme is still accepted alongside `weflix://` because a Silo server issues those links (device pairing, invitations, Watch Party). Installs under a previous application ID do not upgrade in place; users should expect a fresh app install, sign-in, and offline media download.
 
 > **Status:** WIP (`v0.3.x`). Silo Android is pre-1.0 and some areas remain under active development (see [Roadmap](#roadmap)).
 >

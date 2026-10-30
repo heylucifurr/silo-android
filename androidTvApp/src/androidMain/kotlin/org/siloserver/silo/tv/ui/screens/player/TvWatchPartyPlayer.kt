@@ -375,7 +375,7 @@ internal fun TvWatchPartyEffects(
             if (room != null) return@collectLatest
             delay(ROOM_MISSING_EXIT_MS)
             if (watchParty.playback.ended.value == null) {
-                Toast.makeText(context, "This Watch Party isn't available anymore.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "This Weflix Party isn't available anymore.", Toast.LENGTH_SHORT).show()
                 latestPartyEnded()
             }
         }
@@ -428,7 +428,7 @@ private fun org.siloserver.silo.model.watchtogether.RoomSnapshot?.isPlayingRoom(
         !isPaused &&
         playbackState == RoomPlaybackState.Playing
 
-internal const val TV_WATCH_PARTY_LAUNCH_REFUSAL = "Leave the Watch Party to play something else."
+internal const val TV_WATCH_PARTY_LAUNCH_REFUSAL = "Leave the Weflix Party to play something else."
 
 /** Whether a freshly published session starts paused: always in a Watch Party, where only the room plays. */
 internal fun tvPausedWhenReady(inWatchParty: Boolean): Boolean = inWatchParty

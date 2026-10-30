@@ -7,9 +7,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.Inbox
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SwitchAccount
 import androidx.compose.runtime.collectAsState
@@ -31,11 +30,17 @@ import org.siloserver.silo.network.ServerRegistry
  * case in three files at once. The anchors stay where they are; the menu is
  * this.
  *
- * Item order and gating are unchanged. A null [onRequestsClick] is a server
- * with `requests_enabled` off, and a null [onWatchPartyClick] is the
- * Settings → Experimental → Watch Party gate; neither is ever shown unconditionally, and
- * nothing new was added. Reading/ebooks are phone-only and reached from
- * Libraries, and Requests keeps its two entry points (this menu and search).
+ * Item order and gating are unchanged. A null [onCalendarClick] hides the
+ * Calendar row, and a null [onWatchPartyClick] is the Settings → Experimental
+ * → Watch Party gate; neither is ever shown unconditionally, and nothing new
+ * was added. Reading/ebooks are phone-only and reached from Libraries.
+ *
+ * Requests is the bottom bar's tab, not a menu row; Calendar swapped with it,
+ * so a menu row that only jumped to a tab is gone.
+ *
+ * There is no "Switch server" row in this build. The server is fixed at
+ * [org.siloserver.silo.common.startup.DefaultServer], so switching is only
+ * offered from the profile picker's change-server action.
  *
  * Sign out is gated by [SignOutConfirmDialog] — the same dialog the settings
  * Account card raises, so the confirmation does not depend on the route taken.
@@ -46,9 +51,8 @@ fun ProfileMenu(
     onDismissRequest: () -> Unit,
     onSettingsClick: () -> Unit,
     onSwitchProfileClick: () -> Unit,
-    onSwitchServerClick: () -> Unit,
     onSignOutClick: () -> Unit,
-    onRequestsClick: (() -> Unit)? = null,
+    onCalendarClick: (() -> Unit)? = null,
     onWatchPartyClick: (() -> Unit)? = null,
     // Who is signed in, for the header. Null hides the header.
     activeProfile: Profile? = null,
@@ -66,7 +70,7 @@ fun ProfileMenu(
     // jobs and the feature/account split would stop reading as a split. The
     // old menu drew its divider unconditionally, so a server with requests
     // disabled opened onto a stray rule above its first item.
-    val hasFeatureGroup = onRequestsClick != null || onWatchPartyClick != null
+    val hasFeatureGroup = onCalendarClick != null || onWatchPartyClick != null
 
     SiloDropdownMenu(
         expanded = expanded,
@@ -84,19 +88,19 @@ fun ProfileMenu(
             )
             SiloMenuDivider()
         }
-        if (onRequestsClick != null) {
+        if (onCalendarClick != null) {
             SiloMenuItem(
-                label = "Requests",
-                icon = Icons.Rounded.Inbox,
+                label = "Calendar",
+                icon = Icons.Rounded.CalendarMonth,
                 onClick = {
                     onDismissRequest()
-                    onRequestsClick()
+                    onCalendarClick()
                 },
             )
         }
         if (onWatchPartyClick != null) {
             SiloMenuItem(
-                label = "Watch Party",
+                label = "Weflix Party",
                 icon = Icons.Rounded.Groups,
                 onClick = {
                     onDismissRequest()
@@ -119,14 +123,6 @@ fun ProfileMenu(
             onClick = {
                 onDismissRequest()
                 onSwitchProfileClick()
-            },
-        )
-        SiloMenuItem(
-            label = "Switch server",
-            icon = Icons.Rounded.Dns,
-            onClick = {
-                onDismissRequest()
-                onSwitchServerClick()
             },
         )
         SiloMenuItem(

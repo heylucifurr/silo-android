@@ -43,7 +43,7 @@ internal fun rememberWatchPartyReconnectNotice(disconnected: Boolean, since: Lon
 internal fun WatchPartyEndDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     SiloConfirmDialog(
         title = "End the party for everyone?",
-        body = "Everyone leaves the Watch Party, and it can't be rejoined.",
+        body = "Everyone leaves the Weflix Party, and it can't be rejoined.",
         confirmLabel = "End party",
         onConfirm = onConfirm,
         onDismiss = onDismiss,
@@ -108,7 +108,7 @@ fun rememberWatchPartySoloGuard(): WatchPartySoloGuard {
 fun WatchPartySoloGuardDialog(guard: WatchPartySoloGuard) {
     if (guard.pending == null) return
     SiloConfirmDialog(
-        title = "Leave the Watch Party to play this?",
+        title = "Leave the Weflix Party to play this?",
         body = if (guard.pendingFromHost) {
             "You're the host. The party ends for everyone two minutes after you leave, unless you rejoin."
         } else {

@@ -58,7 +58,7 @@ fun PlaybackQualitySheet(
         PlayerMenuScrollColumn(horizontalPadding = 12.dp) {
             if (inRoom) {
                 PlayerFootnote(
-                    "Watch Party keeps everyone on the same version. " +
+                    "Weflix Party keeps everyone on the same version. " +
                         "You can adjust your streaming quality below.",
                 )
             }

@@ -484,7 +484,7 @@ private fun ConnectingRoom(focus: TvPartyFocus, onBack: () -> Unit) {
                 .padding(horizontal = TvPartyMetrics.pageInsetX),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            TvPartyEyebrow("Watch Party")
+            TvPartyEyebrow("Weflix Party")
             Text(text = "Connecting to the party…", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = SiloOnSurface)
             TvPartyButton(
                 label = "Back",

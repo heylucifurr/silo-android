@@ -749,6 +749,8 @@ fun AppNavigation(
                 navArgument("token") { type = NavType.StringType },
             ),
             deepLinks = listOf(
+                navDeepLink { uriPattern = "weflix://invite?server={server}&token={token}" },
+                // A Silo server still issues `silo://invite` invitation links.
                 navDeepLink { uriPattern = "silo://invite?server={server}&token={token}" },
             ),
         ) { backStackEntry ->
@@ -1106,7 +1108,6 @@ fun AppNavigation(
                 onNavigateToEditProfile = { profileId ->
                     navController.navigate(Route.EditProfile(profileId).route)
                 },
-                onChangeServer = { navController.navigate(Route.ServerList.route) },
                 onSignOut = {
                     navScope.launch {
                         if (!signOutTeardown.signOut()) return@launch
@@ -1352,13 +1353,8 @@ fun AppNavigation(
             navController.navigate(Route.ItemDetail(contentId).route)
         }
         composable(Route.Requests.route) {
-            RequestsScreen(
-                onBackClick = { navController.popBackStack() },
-                onMyRequestsClick = { navController.navigate(Route.MyRequests.route) },
-                onRequestDetailClick = openRequestDetail,
-                onLibraryItemClick = openRequestLibraryItem,
-                onDiscoverRowClick = { key, title -> navController.navigate(Route.RequestDiscoverRow(key, title).route) },
-            )
+            // Requests is the bottom bar's tab, so it renders in the tab shell.
+            MainScreen(navController, Tab.Requests)
         }
         composable(
             route = Route.RequestDiscoverRow.ROUTE,
@@ -1892,7 +1888,12 @@ fun AppNavigation(
             )
         }
         composable(Route.Calendar.route) {
-            MainScreen(navController, Tab.Calendar)
+            // Calendar left the bottom bar for the profile menu, so it pushes as
+            // an ordinary screen with a back disc beside the week card.
+            CalendarScreen(
+                onItemClick = { contentId -> navController.navigate(Route.ItemDetail(contentId).route) },
+                onBackClick = { navController.popBackStack() },
+            )
         }
         composable(Route.History.route) {
             HistoryScreen(
@@ -1963,7 +1964,7 @@ fun AppNavigation(
             Route.Libraries.route,
             Route.Recommendations.route,
             Route.Downloads.route,
-            Route.Calendar.route,
+            Route.Requests.route,
             Route.SiloCastRemote.route,
             Route.Player.ROUTE,
         )
@@ -1988,7 +1989,7 @@ fun AppNavigation(
                 Route.Libraries.route,
                 Route.Recommendations.route,
                 Route.Downloads.route,
-                Route.Calendar.route,
+                Route.Requests.route,
             )
             // Profile-wide video intervals; the mini bar's 30s/30s on older servers.
             val castSeekIntervals = rememberVideoSeekIntervals(GOOGLE_CAST_LEGACY_SEEK_INTERVALS)

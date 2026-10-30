@@ -8,19 +8,21 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
@@ -40,8 +42,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
@@ -53,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import org.siloserver.silo.android.R
 import org.siloserver.silo.android.auth.openNativeSignIn
 import org.siloserver.silo.android.ui.components.marquee.MarqueeButton
 import org.siloserver.silo.android.ui.components.marquee.MarqueeButtonKind
@@ -60,15 +65,12 @@ import org.siloserver.silo.android.ui.components.marquee.MarqueeErrorHaptic
 import org.siloserver.silo.android.ui.components.marquee.MarqueeErrorText
 import org.siloserver.silo.android.ui.components.marquee.MarqueeFieldGroup
 import org.siloserver.silo.android.ui.components.marquee.MarqueeHeadline
-import org.siloserver.silo.android.ui.components.marquee.MarqueeIconButton
 import org.siloserver.silo.android.ui.components.marquee.MarqueeLabeledDivider
 import org.siloserver.silo.android.ui.components.marquee.MarqueeMetrics
 import org.siloserver.silo.android.ui.components.marquee.MarqueeProviderMark
 import org.siloserver.silo.android.ui.components.marquee.MarqueeSeparator
-import org.siloserver.silo.android.ui.components.marquee.MarqueeServerChip
 import org.siloserver.silo.android.ui.components.marquee.MarqueeStage
 import org.siloserver.silo.android.ui.components.marquee.MarqueeTextField
-import org.siloserver.silo.android.ui.components.marquee.MarqueeTopBarSpacer
 import org.siloserver.silo.common.ui.marquee.marqueeShake
 import org.siloserver.silo.common.ui.marquee.MarqueeColors
 import org.siloserver.silo.common.ui.marquee.MarqueeScene
@@ -94,7 +96,9 @@ import org.siloserver.silo.network.ServerRegistry
  * @param signupEnabled Whether "Create account" is shown.
  * @param onNavigateToSignup Tapped "Create account".
  * @param onNavigateToProfiles Called after a successful sign-in.
- * @param onChangeServer Back, or "Use a different server" from the server chip.
+ * @param onChangeServer The system Back gesture. This screen has no visible
+ * "Change server" control — no back disc, no server capsule — because the
+ * server is fixed in this build.
  */
 @Composable
 fun LoginScreen(
@@ -178,23 +182,7 @@ fun LoginScreen(
         frostStart = 0.40f,
         onBack = onChangeServer,
         blockBack = state.signInBusy,
-        topBar = {
-            MarqueeIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Change server",
-                onClick = onChangeServer,
-                enabled = !state.signInBusy,
-            )
-            MarqueeTopBarSpacer()
-            MarqueeServerChip(
-                name = server.name,
-                hostLabel = server.hostLabel,
-                markUrl = server.branding?.markUrl,
-                actionLabel = "Use a different server",
-                onAction = onChangeServer,
-                enabled = !state.signInBusy,
-            )
-        },
+        hero = { WeflixBrandLogo() },
     ) {
         MarqueeHeadline(
             title = "Sign in",
@@ -439,3 +427,22 @@ private fun AccountProviderChooser(
         } + SiloDialogAction(label = "Cancel", onClick = onDismiss),
     )
 }
+
+/**
+ * The brand lockup. It fills whatever room the stage gives it, capped so a tall
+ * screen does not stretch the wordmark into a banner, and scales down when the
+ * form and the keyboard need the height instead. Marked decorative: the screen's
+ * own heading already says what the screen is.
+ */
+@Composable
+private fun WeflixBrandLogo() {
+    Image(
+        painter = painterResource(R.drawable.weflix_logo),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier
+            .fillMaxHeight()
+            .widthIn(max = 240.dp),
+    )
+}
+

@@ -50,9 +50,11 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Device-pairing links from the `silo` scheme (e.g.
-                     silo://device?token=…) so a QR/login flow on another
-                     device can hand off to this TV for approval. -->
+                <!-- Device-pairing and content links from the `weflix` scheme
+                     (e.g. weflix://device?token=…) so a QR/login flow on another
+                     device can hand off to this TV for approval. `silo` stays
+                     accepted for the links a Silo server still issues. -->
+                <data android:scheme="weflix" />
                 <data android:scheme="silo" />
             </intent-filter>
         </activity>

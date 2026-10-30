@@ -121,7 +121,7 @@ fun TvJoinCodeDialog(
                     .then(rememberTvDialogInitialFocus(firstKeyFocus)),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                TvPartyEyebrow("Join a Watch Party")
+                TvPartyEyebrow("Join a Weflix Party")
                 Text(
                     text = "Enter the party code",
                     fontSize = 20.sp,

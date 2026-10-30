@@ -33,7 +33,7 @@ class TvDiagnosticsStateTest {
             listOf(DiagnosticsDestinationKind.HOSTED, DiagnosticsDestinationKind.SELF_HOSTED),
             TvDiagnosticsDestinations,
         )
-        assertEquals("Silo Diagnostics", tvDiagnosticsDestinationTitle(DiagnosticsDestinationKind.HOSTED))
+        assertEquals("weflix Diagnostics", tvDiagnosticsDestinationTitle(DiagnosticsDestinationKind.HOSTED))
         assertEquals("This Silo server", tvDiagnosticsDestinationTitle(DiagnosticsDestinationKind.SELF_HOSTED))
     }
 
@@ -49,7 +49,7 @@ class TvDiagnosticsStateTest {
             tvDiagnosticsDestinationName(DiagnosticsDestinationKind.SELF_HOSTED, ""),
         )
         assertEquals(
-            "Silo Diagnostics",
+            "weflix Diagnostics",
             tvDiagnosticsDestinationName(DiagnosticsDestinationKind.HOSTED, "Living Room Silo"),
         )
     }

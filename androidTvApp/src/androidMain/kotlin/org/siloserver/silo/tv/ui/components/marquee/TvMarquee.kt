@@ -198,7 +198,7 @@ fun TvMarqueeScreen(
             Row(Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     painter = painterResource(R.drawable.silo_wordmark),
-                    contentDescription = "Silo",
+                    contentDescription = "weflix",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.width(75.dp),
                 )

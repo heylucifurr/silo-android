@@ -77,11 +77,11 @@ class TvWatchPartyTextTest {
 
     @Test
     fun `an ended party explains itself`() {
-        assertEquals("The Watch Party has ended.", tvWatchPartyEndedMessage("host_left"))
-        assertEquals("The Watch Party has ended.", tvWatchPartyEndedMessage("not_found"))
-        assertEquals("The Watch Party has ended.", tvWatchPartyEndedMessage("ended"))
+        assertEquals("The Weflix Party has ended.", tvWatchPartyEndedMessage("host_left"))
+        assertEquals("The Weflix Party has ended.", tvWatchPartyEndedMessage("not_found"))
+        assertEquals("The Weflix Party has ended.", tvWatchPartyEndedMessage("ended"))
         assertEquals(
-            "This profile joined the Watch Party on another device.",
+            "This profile joined the Weflix Party on another device.",
             tvWatchPartyEndedMessage("connection_replaced"),
         )
         assertEquals("Lost connection to the party.", tvWatchPartyEndedMessage("connection_lost"))

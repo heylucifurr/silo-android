@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
@@ -42,6 +43,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -77,6 +79,8 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import org.siloserver.silo.android.ui.theme.SiloNavPillBorder
+import org.siloserver.silo.android.ui.theme.SiloOverlayPillSurface
 import org.siloserver.silo.android.ui.theme.siloPageBackdrop
 import org.siloserver.silo.android.ui.components.ErrorView
 import org.siloserver.silo.android.ui.navigation.LocalBottomChromeInset
@@ -131,6 +135,9 @@ private val CalendarSpring = spring<Dp>(dampingRatio = 0.85f, stiffness = Spring
 fun CalendarScreen(
     onItemClick: (String) -> Unit,
     headerActions: @Composable RowScope.() -> Unit = {},
+    // Non-null when Calendar is pushed from the profile menu; null as a tab,
+    // where the bar is the way out.
+    onBackClick: (() -> Unit)? = null,
     viewModel: CalendarViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -250,6 +257,7 @@ fun CalendarScreen(
                 fallbackTint = HazeTint(Color(0xFF161616).copy(alpha = 0.96f))
             },
             headerActions = headerActions,
+            onBackClick = onBackClick,
             onSelectDay = { day ->
                 viewModel.selectDay(day)
                 scrollTarget = day
@@ -275,12 +283,32 @@ fun CalendarScreen(
  * with a `white 0.08` hairline, h14/v12 inner padding, 12 spacing, and 16/8
  * outer margins under the status bar.
  */
+/** Back disc for the pushed (profile-menu) Calendar page, matching the Requests page's. */
+@Composable
+private fun BackDisc(onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(SiloOverlayPillSurface)
+            .border(1.dp, SiloNavPillBorder, CircleShape),
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = "Back",
+            tint = Color.White,
+        )
+    }
+}
+
 @Composable
 private fun CalendarHeaderCard(
     state: CalendarUiState,
     locale: Locale,
     hazeModifier: Modifier,
     headerActions: @Composable RowScope.() -> Unit,
+    onBackClick: (() -> Unit)? = null,
     onSelectDay: (String) -> Unit,
     onPrevWeek: () -> Unit,
     onNextWeek: () -> Unit,
@@ -308,6 +336,9 @@ private fun CalendarHeaderCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                if (onBackClick != null) {
+                    BackDisc(onClick = onBackClick)
+                }
                 Text(
                     text = monthLabel(state.weekDates, locale),
                     fontSize = 17.sp,

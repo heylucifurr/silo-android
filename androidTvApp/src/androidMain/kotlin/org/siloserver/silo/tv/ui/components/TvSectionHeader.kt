@@ -34,7 +34,7 @@ fun TvSectionHeader(
     icon: ImageVector? = null,
     iconSize: androidx.compose.ui.unit.Dp = 18.dp,
     onSeeAllClick: (() -> Unit)? = null,
-    /** Optional uppercase eyebrow rendered above the title (e.g. "SILO PICKS"). */
+    /** Optional uppercase eyebrow rendered above the title (e.g. "WEFLIX PICKS"). */
     eyebrow: String? = null,
 ) {
     Row(

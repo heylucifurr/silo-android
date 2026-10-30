@@ -2617,7 +2617,7 @@ class PlayerViewModel(
                             nextUpTransitionGate.cancel()
                             _uiState.update {
                                 it.copy(
-                                    error = "The server offered a different version than the Watch Party's.",
+                                    error = "The server offered a different version than the Weflix Party's.",
                                     isLoading = false,
                                     isBuffering = false,
                                 )

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.siloserver.silo.model.auth.DeviceCodeFormat
 import org.siloserver.silo.model.auth.DeviceLoginCapabilityResponse
 import org.siloserver.silo.model.auth.DeviceLoginPollResponse
 import org.siloserver.silo.model.auth.DeviceLoginStartResponse
@@ -255,9 +256,23 @@ class DeviceSignInMachine(
                 when (outcome) {
                     is DeviceLoginRepository.StartOutcome.Started -> {
                         recovered()
+                        // Show the code on the address this client reaches the
+                        // server on, not whatever host the server advertises:
+                        // a `beta.` activation host is not one the TV's user can
+                        // necessarily open, and the live server is right here.
+                        val session = outcome.session.copy(
+                            verificationUri = DeviceCodeFormat.onServer(
+                                outcome.session.verificationUri,
+                                serverUrl,
+                            ),
+                            verificationUriComplete = DeviceCodeFormat.onServer(
+                                outcome.session.verificationUriComplete,
+                                serverUrl,
+                            ),
+                        )
                         val started = DeviceLoginPoller(
                             pollOnce = { repository.poll(serverUrl, it) },
-                            session = outcome.session,
+                            session = session,
                             clock = clock,
                         )
                         poller = started

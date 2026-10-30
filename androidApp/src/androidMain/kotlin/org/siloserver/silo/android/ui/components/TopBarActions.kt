@@ -94,11 +94,10 @@ fun TopBarIconButton(
 @Composable
 fun TopBarProfileMenu(
     activeProfile: Profile?,
-    onRequestsClick: (() -> Unit)?,
+    onCalendarClick: (() -> Unit)?,
     onWatchPartyClick: (() -> Unit)?,
     onSettingsClick: () -> Unit,
     onSwitchProfileClick: () -> Unit,
-    onSwitchServerClick: () -> Unit,
     onSignOutClick: () -> Unit,
 ) {
     var menuExpanded by rememberSaveable { mutableStateOf(false) }
@@ -129,11 +128,10 @@ fun TopBarProfileMenu(
         ProfileMenu(
             expanded = menuExpanded,
             onDismissRequest = { menuExpanded = false },
-            onRequestsClick = onRequestsClick,
+            onCalendarClick = onCalendarClick,
             onWatchPartyClick = onWatchPartyClick,
             onSettingsClick = onSettingsClick,
             onSwitchProfileClick = onSwitchProfileClick,
-            onSwitchServerClick = onSwitchServerClick,
             onSignOutClick = onSignOutClick,
             activeProfile = activeProfile,
         )
@@ -148,11 +146,10 @@ fun TopBarProfileMenu(
 fun TabTopBarActions(
     activeProfile: Profile?,
     onSearchClick: () -> Unit,
-    onRequestsClick: (() -> Unit)?,
+    onCalendarClick: (() -> Unit)?,
     onWatchPartyClick: (() -> Unit)?,
     onSettingsClick: () -> Unit,
     onSwitchProfileClick: () -> Unit,
-    onSwitchServerClick: () -> Unit,
     onSignOutClick: () -> Unit,
     modifier: Modifier = Modifier,
     leadingActions: @Composable () -> Unit = {},
@@ -171,11 +168,10 @@ fun TabTopBarActions(
         }
         TopBarProfileMenu(
             activeProfile = activeProfile,
-            onRequestsClick = onRequestsClick,
+            onCalendarClick = onCalendarClick,
             onWatchPartyClick = onWatchPartyClick,
             onSettingsClick = onSettingsClick,
             onSwitchProfileClick = onSwitchProfileClick,
-            onSwitchServerClick = onSwitchServerClick,
             onSignOutClick = onSignOutClick,
         )
     }

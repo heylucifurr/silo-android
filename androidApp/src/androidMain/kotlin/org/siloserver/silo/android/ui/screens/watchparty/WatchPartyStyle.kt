@@ -170,7 +170,7 @@ private data class BackdropArt(val url: String, val thumbhash: String?, val isPo
 
 /** Transparent bar: a round Back and the centred page title. */
 @Composable
-internal fun WatchPartyTopBar(onBack: (() -> Unit)?, modifier: Modifier = Modifier, title: String = "Watch Party") {
+internal fun WatchPartyTopBar(onBack: (() -> Unit)?, modifier: Modifier = Modifier, title: String = "Weflix Party") {
     Box(modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp)) {
         if (onBack != null) {
             WatchPartyCircleButton(
