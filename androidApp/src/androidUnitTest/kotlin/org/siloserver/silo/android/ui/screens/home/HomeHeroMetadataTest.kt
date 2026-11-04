@@ -29,34 +29,63 @@ class HomeHeroMetadataTest {
     )
 
     @Test
-    fun aMovieReadsYearRuntimeGenreAndRating() {
-        val line = heroMetadataLine(
-            item(year = 2026, runtime = 100, genres = listOf("Action", "Crime"), contentRating = "r"),
-        )
+    fun aMovieReadsRuntimeYearAndGenre() {
+        val item = item(year = 2026, runtime = 100, genres = listOf("Action", "Crime"), contentRating = "r")
 
-        assertEquals("2026 · 1h 40m · Action · R", line)
+        assertEquals("1h 40m · 2026 · Action", heroMetadataLine(item))
+        // The classification is the chip beside the line, not part of it.
+        assertEquals("R", heroRatingChip(item))
     }
 
     @Test
-    fun anEpisodeLeadsWithItsPositionAndDropsTheGenre() {
-        val line = heroMetadataLine(
-            item(
-                type = "episode",
-                year = 2026,
-                runtime = 55,
-                genres = listOf("Drama"),
-                contentRating = "TV-MA",
-                seasonNumber = 3,
-                episodeNumber = 7,
-            ),
+    fun anEpisodeLeadsWithItsPositionAndDropsTheYearAndGenre() {
+        val item = item(
+            type = "episode",
+            year = 2026,
+            runtime = 55,
+            genres = listOf("Drama"),
+            contentRating = "TV-MA",
+            seasonNumber = 3,
+            episodeNumber = 7,
         )
 
-        assertEquals("S3 · E7 · 55 min · TV-MA", line)
+        assertEquals("S3 · E7 · 55 min", heroMetadataLine(item))
+        assertEquals("TV-MA", heroRatingChip(item))
     }
 
     @Test
-    fun aCardWithNothingToSayProducesAnEmptyLine() {
-        assertEquals("", heroMetadataLine(item()))
+    fun aCardWithNothingToSayProducesAnEmptyLineAndNoChip() {
+        val item = item()
+
+        assertEquals("", heroMetadataLine(item))
+        assertNull(heroRatingChip(item))
+    }
+
+    @Test
+    fun aBlankOrMissingClassificationIsNoChip() {
+        assertNull(heroRatingChip(item(contentRating = null)))
+        assertNull(heroRatingChip(item(contentRating = "   ")))
+        assertEquals("PG-13", heroRatingChip(item(contentRating = "pg-13")))
+    }
+
+    @Test
+    fun theCardIsAnnouncedAsOneTarget() {
+        val comingSoon = item(
+            year = 2026,
+            runtime = 100,
+            genres = listOf("Action"),
+            contentRating = "R",
+        ).copy(
+            contentId = "ext:movie-1",
+            title = "Heat 2",
+            availability = "unreleased",
+            releaseDate = "2026-12-16",
+        )
+
+        assertEquals(
+            "Coming Soon. Heat 2. 1h 40m · 2026 · Action. Coming soon · Dec 16, 2026. Item 2 of 5",
+            heroAccessibilityLabel("Coming Soon", comingSoon, position = 1, count = 5),
+        )
     }
 
     @Test

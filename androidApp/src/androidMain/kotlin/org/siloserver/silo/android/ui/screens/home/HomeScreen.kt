@@ -432,9 +432,6 @@ fun HomeScreen(
                                             onComingSoonClick(type, tmdbId)
                                         }
                                     },
-                                    onPlayClick = { item ->
-                                        onPlayClick(item.contentId, item.positionSeconds)
-                                    },
                                     isOnScreen = heroOnScreen,
                                 )
                             }

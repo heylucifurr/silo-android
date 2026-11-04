@@ -15,10 +15,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,11 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeOff
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,12 +49,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,20 +85,25 @@ import org.siloserver.silo.network.TokenManager
 /** How long one hero slide rests before the carousel advances. */
 private const val HERO_AUTO_ADVANCE_MS = 8_000L
 
-/** The hero frame's baseline height, before it is scaled for large text. */
-private val HERO_BASE_HEIGHT = 400.dp
+/** The card's side inset from the page edge, and its corner radius. */
+private val HERO_CARD_INSET = 16.dp
+private val HERO_CARD_CORNER = 20.dp
+
+/** The card is a 16:9 frame, like a still from the title. */
+private const val HERO_CARD_ASPECT = 16f / 9f
 
 /**
- * The full-width hero at the top of Home for a row the administrator flagged
- * `featured`: a swipeable carousel of large backdrops, each autoplaying the
- * title's muted trailer clip when the server has one, with page dots, a mute
- * toggle and an 8-second auto-advance.
+ * The hero at the top of Home for a row the administrator flagged `featured`,
+ * laid out the way Prime Video's mobile hero is: an inset, rounded 16:9 card
+ * holding the backdrop with the title's muted trailer playing over it, the
+ * title art at its bottom-left, a mute toggle at its top-right, and the
+ * metadata, availability line and page dots beneath it.
  *
- * A curated "Most anticipated" slide the library does not own offers
- * "Coming soon · <date>" and More info instead of Play; a title that has since
- * landed in the library plays like any other item. Everything else about a
- * slide — artwork, title, metadata, overview — comes from the ordinary section
- * card, so a hero row of library items behaves exactly like the web hero.
+ * There is no Play / More info button and no synopsis: on a phone the card
+ * itself is the target. Tapping anywhere on it opens the slide — the title page
+ * for a title the library owns, the coming-soon page for one it does not. A
+ * curated "Most anticipated" slide the library lacks carries a
+ * "Coming soon · <date>" line in place of a call to action.
  *
  * Nothing renders when the row carries no items, and a slide with no trailer
  * (or one that fails to play) keeps its backdrop with no error shown.
@@ -118,8 +115,6 @@ fun HomeHeroCarousel(
     onItemClick: (SectionItem) -> Unit,
     /** Opens the coming-soon detail page for a curated title the library lacks. */
     onComingSoonClick: (SectionItem) -> Unit,
-    /** Plays a slide the library owns. */
-    onPlayClick: (SectionItem) -> Unit,
     /** False while the hero is scrolled out of view: everything pauses. */
     isOnScreen: Boolean,
     modifier: Modifier = Modifier,
@@ -143,13 +138,9 @@ fun HomeHeroCarousel(
         value = runCatching { tokenManager.getServerUrl() }.getOrNull()
     }
 
-    // A manual pause survives a page change, like the web hero's pause control.
-    var userPaused by remember { mutableStateOf(false) }
-
     // Reduce motion, battery saver, the background and an off-screen hero all
     // stop the trailer and the auto-advance. None of them blocks a swipe.
-    val autoplayAllowed = isOnScreen && appResumed && !powerSaveMode && !reduceMotion
-    val advancing = autoplayAllowed && !userPaused && slides.size > 1
+    val advancing = isOnScreen && appResumed && !powerSaveMode && !reduceMotion && slides.size > 1
     val currentPage = pagerState.currentPage.coerceIn(0, slides.lastIndex)
     val current = slides[currentPage]
 
@@ -168,52 +159,49 @@ fun HomeHeroCarousel(
         }
     }
 
-    // Large text grows the frame so the title block never crowds the artwork;
-    // a landscape phone has far less room, so it gets the compact frame.
-    val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val configuration = LocalConfiguration.current
-    val heroHeight =
-        if (configuration.screenHeightDp in 1..520) 240.dp else HERO_BASE_HEIGHT * fontScale
-
-    val positionLabel = "No. " + (currentPage + 1).toString().padStart(2, '0')
-
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = heroHeight)
             .semantics {
                 contentDescription =
-                    "Featured, ${section.title}. Item ${currentPage + 1} of ${slides.size}."
+                    heroAccessibilityLabel(section.title, current, currentPage, slides.size)
             },
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxWidth().height(heroHeight),
-            pageSpacing = 0.dp,
-        ) { page ->
-            HeroSlideBackdrop(
-                item = slides[page],
-                clipUrl = heroClipUrl(slides[page].heroVideoUrl, serverUrl),
-                // Only the visible slide holds a player: one decoder, one clip.
-                // Pausing keeps it; only leaving the slide tears it down.
-                active = page == pagerState.currentPage,
-                trailerPlaying = advancing && page == pagerState.currentPage,
-            )
+        Box(
+            modifier = Modifier
+                .padding(horizontal = HERO_CARD_INSET)
+                .fillMaxWidth()
+                .aspectRatio(HERO_CARD_ASPECT)
+                .clip(RoundedCornerShape(HERO_CARD_CORNER))
+                // A tap, not a drag: `clickable` leaves the pager's horizontal
+                // swipe alone, so the card still pages between slides.
+                .clickable(role = Role.Button) {
+                    if (current.isComingSoon) onComingSoonClick(current) else onItemClick(current)
+                },
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                pageSpacing = 0.dp,
+            ) { page ->
+                HeroSlideBackdrop(
+                    item = slides[page],
+                    clipUrl = heroClipUrl(slides[page].heroVideoUrl, serverUrl),
+                    // Only the visible slide holds a player: one decoder, one clip.
+                    // Leaving the slide tears it down; pausing does not.
+                    active = page == pagerState.currentPage,
+                    trailerPlaying = advancing && page == pagerState.currentPage,
+                )
+            }
         }
 
-        HeroSlideContent(
+        HeroSlideMeta(
             item = current,
-            positionLabel = positionLabel,
             position = currentPage,
             count = slides.size,
-            userPaused = userPaused,
-            showPauseControl = autoplayAllowed && slides.size > 1,
-            onTogglePause = { userPaused = !userPaused },
-            onItemClick = { onItemClick(current) },
-            onComingSoonClick = { onComingSoonClick(current) },
-            onPlayClick = { onPlayClick(current) },
             onSelectPage = { target -> scope.launch { pagerState.animateScrollToPage(target) } },
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier.padding(horizontal = HERO_CARD_INSET),
         )
     }
 }
@@ -263,9 +251,11 @@ private fun Context.isPowerSaveMode(): Boolean =
     (getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isPowerSaveMode == true
 
 /**
- * One slide's artwork: the backdrop first, then the muted trailer clip once it
- * is ready. A slide with no clip — or one whose clip fails — keeps the backdrop
- * alone and shows nothing about the failure.
+ * One slide inside the card: the backdrop, then the muted trailer once it is
+ * ready, the title art bottom-left and the mute toggle top-right.
+ *
+ * A slide with no clip — or one whose clip fails — keeps the backdrop alone and
+ * shows nothing about the failure, and its mute control never appears.
  */
 @Composable
 private fun HeroSlideBackdrop(
@@ -299,16 +289,16 @@ private fun HeroSlideBackdrop(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        // Scrims: the title block sits on the darkest part of the frame, and the
-        // chrome above it stays readable over a bright still.
+        // A bottom scrim only: the title sits at the card's bottom-left and the
+        // card is already inset and rounded, so no full-frame wash is needed.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        0f to Color.Black.copy(alpha = 0.55f),
-                        0.45f to Color.Black.copy(alpha = 0.15f),
-                        1f to Color.Black.copy(alpha = 0.92f),
+                        0f to Color.Transparent,
+                        0.5f to Color.Transparent,
+                        1f to Color.Black.copy(alpha = 0.78f),
                     ),
                 ),
         )
@@ -317,26 +307,14 @@ private fun HeroSlideBackdrop(
             MuteToggle(
                 muted = clipMuted,
                 onToggle = { clipMuted = !clipMuted },
-                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+                modifier = Modifier.align(Alignment.TopEnd).padding(10.dp),
             )
         }
+        HeroCardTitle(
+            item = item,
+            modifier = Modifier.align(Alignment.BottomStart).padding(14.dp),
+        )
     }
-}
-
-/**
- * The clip URL a player can actually open: an absolute one passes through, and a
- * site-relative one (`/api/v2/artwork/...`, which the server sends) is resolved
- * against [serverUrl] exactly as a playback stream URL is. Null when there is no
- * clip, or when the server address is not known yet — the slide keeps its
- * backdrop either way.
- */
-internal fun heroClipUrl(rawClipUrl: String?, serverUrl: String?): String? {
-    val url = rawClipUrl?.trim().orEmpty()
-    if (url.isEmpty()) return null
-    if (url.startsWith("http://") || url.startsWith("https://")) return url
-    val base = serverUrl?.trim().orEmpty()
-    if (base.isEmpty()) return null
-    return resolvePlaybackStreamUrl(base, url)
 }
 
 /** The muted autoplaying clip. Nothing but the video: no controller, no chrome. */
@@ -432,120 +410,28 @@ private fun MuteToggle(
 }
 
 /**
- * The slide's title block: the eyebrow, the title art (or the title text), the
- * metadata line, the overview, the actions and the page dots.
+ * The clip URL a player can actually open: an absolute one passes through, and a
+ * site-relative one (`/api/v2/artwork/...`, which the server sends) is resolved
+ * against [serverUrl] exactly as a playback stream URL is. Null when there is no
+ * clip, or when the server address is not known yet — the slide keeps its
+ * backdrop either way.
  */
-@Composable
-private fun HeroSlideContent(
-    item: SectionItem,
-    positionLabel: String,
-    position: Int,
-    count: Int,
-    userPaused: Boolean,
-    showPauseControl: Boolean,
-    onTogglePause: () -> Unit,
-    onItemClick: () -> Unit,
-    onComingSoonClick: () -> Unit,
-    onPlayClick: () -> Unit,
-    onSelectPage: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val comingSoon = item.isComingSoon
-    val metadata = heroMetadataLine(item)
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(
-            text = "FEATURED — $positionLabel",
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.75f),
-            fontWeight = FontWeight.SemiBold,
-        )
-
-        HeroTitle(item = item)
-
-        if (metadata.isNotEmpty()) {
-            Text(
-                text = metadata,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.88f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        item.overview?.takeIf { it.isNotBlank() }?.let { overview ->
-            Text(
-                text = overview,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.78f),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (comingSoon) {
-                ComingSoonBadge(item.comingSoonLabel)
-            } else {
-                Button(
-                    onClick = onPlayClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black,
-                    ),
-                ) {
-                    Icon(
-                        Icons.Filled.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text("Play")
-                }
-            }
-            Button(
-                onClick = if (comingSoon) onComingSoonClick else onItemClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.18f),
-                    contentColor = Color.White,
-                ),
-            ) {
-                Icon(Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("More info")
-            }
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            HeroPageDots(position = position, count = count, onSelectPage = onSelectPage)
-            if (showPauseControl) {
-                IconButton(onClick = onTogglePause, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = if (userPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                        contentDescription = if (userPaused) "Resume slideshow" else "Pause slideshow",
-                        tint = Color.White.copy(alpha = 0.9f),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        }
-    }
+internal fun heroClipUrl(rawClipUrl: String?, serverUrl: String?): String? {
+    val url = rawClipUrl?.trim().orEmpty()
+    if (url.isEmpty()) return null
+    if (url.startsWith("http://") || url.startsWith("https://")) return url
+    val base = serverUrl?.trim().orEmpty()
+    if (base.isEmpty()) return null
+    return resolvePlaybackStreamUrl(base, url)
 }
 
-/** The title art when the server sent one, else the title as text. */
+/**
+ * The title art at the card's bottom-left, over the artwork — the server's logo
+ * when it has one, the title as text otherwise. A logo that fails to load falls
+ * back to the text on the next frame.
+ */
 @Composable
-private fun HeroTitle(item: SectionItem) {
+private fun HeroCardTitle(item: SectionItem, modifier: Modifier = Modifier) {
     var logoFailed by remember(item.contentId) { mutableStateOf(false) }
     val logoUrl = item.logoUrl?.takeIf { it.isNotBlank() && !logoFailed }
 
@@ -553,8 +439,9 @@ private fun HeroTitle(item: SectionItem) {
         ThumbhashImage(
             url = logoUrl,
             thumbhash = null,
-            contentDescription = item.title,
-            modifier = Modifier.heightIn(min = 44.dp, max = 96.dp).width(240.dp),
+            // The card itself is announced; the art is decorative here.
+            contentDescription = null,
+            modifier = modifier.heightIn(min = 32.dp, max = 76.dp).width(210.dp),
             contentScale = ContentScale.Fit,
             alignment = Alignment.CenterStart,
             transparent = true,
@@ -563,27 +450,95 @@ private fun HeroTitle(item: SectionItem) {
     } else {
         Text(
             text = item.title,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            modifier = modifier,
         )
     }
 }
 
-/** A non-interactive "Coming soon · <date>" pill, matching the web hero's badge. */
+/**
+ * What sits under the card, as Prime's mobile hero has it: one line of chips and
+ * metadata, then the availability line for a title the library does not own, then
+ * the page dots. There is no synopsis and no button — the card above is the
+ * target.
+ */
 @Composable
-private fun ComingSoonBadge(label: String) {
+private fun HeroSlideMeta(
+    item: SectionItem,
+    position: Int,
+    count: Int,
+    onSelectPage: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            heroRatingChip(item)?.let { rating -> HeroChip(rating) }
+            val metadata = heroMetadataLine(item)
+            if (metadata.isNotEmpty()) {
+                Text(
+                    text = metadata,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.72f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        if (item.isComingSoon) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Schedule,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.92f),
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = item.comingSoonLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.92f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        HeroPageDots(
+            position = position,
+            count = count,
+            onSelectPage = onSelectPage,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = 2.dp),
+        )
+    }
+}
+
+/** A classification pill, like the rating chip on Prime's hero. */
+@Composable
+private fun HeroChip(label: String) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(Color.White.copy(alpha = 0.18f))
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color.White.copy(alpha = 0.16f))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
         )
@@ -596,9 +551,11 @@ private fun HeroPageDots(
     position: Int,
     count: Int,
     onSelectPage: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (count <= 1) return
     Row(
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -608,37 +565,52 @@ private fun HeroPageDots(
                 modifier = Modifier
                     .size(width = if (active) 18.dp else 6.dp, height = 6.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = if (active) 0.95f else 0.45f))
-                    .semantics {
-                        contentDescription = "Go to item ${index + 1} of $count"
-                        role = Role.Button
-                    }
-                    .clickable { onSelectPage(index) },
+                    .background(Color.White.copy(alpha = if (active) 0.95f else 0.4f))
+                    .semantics { contentDescription = "Go to item ${index + 1} of $count" }
+                    .clickable(role = Role.Button) { onSelectPage(index) },
             )
         }
     }
 }
 
 /**
- * `2026 · 1h 40m · Action · PG-13` — the same facts the web hero's metadata line
- * shows, from the card's own fields. An episode card leads with its position
- * instead of the year.
+ * What a screen reader announces for the hero. The card is one target, so the
+ * title, its facts and its availability are read together rather than as a set
+ * of separate controls.
+ */
+internal fun heroAccessibilityLabel(
+    rowTitle: String,
+    item: SectionItem,
+    position: Int,
+    count: Int,
+): String {
+    val parts = mutableListOf(rowTitle, item.title)
+    heroMetadataLine(item).takeIf { it.isNotEmpty() }?.let { parts += it }
+    if (item.isComingSoon) parts += item.comingSoonLabel
+    parts += "Item ${position + 1} of $count"
+    return parts.joinToString(". ")
+}
+
+/**
+ * `1h 40m · 2026 · Action` — the facts Prime's hero puts beside its rating chip,
+ * from the card's own fields. An episode card leads with its position instead of
+ * the year, and the classification is the chip, not this line.
  */
 internal fun heroMetadataLine(item: SectionItem): String {
     val parts = mutableListOf<String>()
     val isEpisode = item.type.equals("episode", ignoreCase = true)
     if (isEpisode && item.seasonNumber != null && item.episodeNumber != null) {
         parts += "S${item.seasonNumber} · E${item.episodeNumber}"
-    } else if (item.year > 0) {
-        parts += item.year.toString()
     }
     heroRuntimeLabel(item.runtime)?.let { parts += it }
-    if (!isEpisode) {
-        item.genres.firstOrNull { it.isNotBlank() }?.let { parts += it }
-    }
-    item.contentRating?.trim()?.takeIf { it.isNotEmpty() }?.let { parts += it.uppercase() }
+    if (!isEpisode && item.year > 0) parts += item.year.toString()
+    if (!isEpisode) item.genres.firstOrNull { it.isNotBlank() }?.let { parts += it }
     return parts.joinToString(" · ")
 }
+
+/** The classification chip beside [heroMetadataLine]; null when the card carries none. */
+internal fun heroRatingChip(item: SectionItem): String? =
+    item.contentRating?.trim()?.takeIf { it.isNotEmpty() }?.uppercase()
 
 /** `1h 40m` from a minute count; null when the card carries no runtime. */
 internal fun heroRuntimeLabel(runtimeMinutes: Int?): String? {
@@ -649,3 +621,8 @@ internal fun heroRuntimeLabel(runtimeMinutes: Int?): String? {
     val remainder = minutes % 60
     return if (remainder == 0) "${hours}h" else "${hours}h ${remainder}m"
 }
+
+
+
+
+
