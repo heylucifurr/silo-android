@@ -33,8 +33,10 @@ answered 404.
 | `androidTvApp/.../shell/TvMainShell.kt` | Wires `onComingSoonClick` → `TvMainRoute.RequestDetail`. |
 | `androidTvApp/.../components/TvFocusMarqueeModel.kt` | The focus marquee's badge line reads `COMING SOON · <date>` for an unowned slide. |
 | `docs/integration/coming-soon-hero.md` | **New.** The server contract as this client sees it. |
-| `shared/.../commonTest/.../AnticipatedSlideTest.kt` | **New.** 8 tests. |
-| `androidApp/.../androidUnitTest/.../HomeHeroMetadataTest.kt` | **New.** 8 tests. |
+| `shared/.../commonTest/.../AnticipatedSlideTest.kt` | **New.** 9 tests. |
+| `androidApp/.../androidUnitTest/.../HomeHeroMetadataTest.kt` | **New.** 10 tests. |
+| `docs/design/hero-after.png` | **New.** The restyled hero, captured on the Pixel 8 Pro emulator. |
+| `docs/design/hero-current-android.png` | **New.** The hero before this restyle, captured from the previous commit. |
 
 ### Endpoints used (no new ones)
 
@@ -47,28 +49,44 @@ pattern as `StartupSplashVideo`) and `ThumbhashImage`.
 
 ### Phone hero layout
 
-Luther asked for Prime Video's mobile hero rather than a port of the web hero, so
-the phone hero is:
+The phone hero follows the restyle spec (`docs/design/hero-reference-prime.png`
+was not in the repo, so the written spec was treated as authoritative):
 
-- an inset, rounded **16:9 card** (16 dp side inset, 20 dp corners) — not a
-  full-bleed frame;
-- the backdrop with the muted trailer playing over it, the title logo (or title
-  text) at the card's bottom-left, a mute toggle at its top-right;
-- beneath the card, a white status chip (`COMING SOON`, black bold text) and the
-  classification chip (`PG-13`) beside the runtime, year and genre — runtime
-  bright, year and genre dimmer, as Prime renders them;
-- then the release date on its own line (`Sep 19, 2026`, with a calendar icon)
-  for a title the library does not own — Prime's second line is its service line
-  (`Included with Prime`), ours is when the title arrives;
-- then the page dots, centred;
-- **no Play / More info button, no synopsis, no "FEATURED — No. 0N" eyebrow.**
-  On a phone the card is the target: tapping anywhere on it opens the slide —
-  the title page for a title the library owns, the coming-soon page for one it
-  does not. The card is one accessibility target announcing the title, its
-  facts, its availability and its position.
+- **Card**: 16 dp side inset, 20 dp top corners, square bottom corners, height =
+  width × 0.78 (~4:3), no border; capped at 720 dp wide and centred on a tablet.
+- **Media**: backdrop and trailer both fill the card and centre-crop
+  (`ContentScale.Crop`, `RESIZE_MODE_ZOOM`), so a letterboxed trailer shows no
+  bars. The backdrop stays up until the trailer's first frame renders, then the
+  trailer crossfades in over 300 ms.
+- **Bottom fade**: the card's bottom 45 % runs transparent → `SiloPageBackground`
+  (`#111111`), the page's own colour, so the card dissolves rather than ending on
+  an edge. The page also lays its near-invisible washes over that base, so a
+  20 dp feather of the card's colour is carried into the page below to turn the
+  last few levels into a ramp (see "Not done / limitations").
+- **Title**: the item's clear logo (`logo_url`) at the card's bottom-left, 16 from
+  the left, max 60 % of the card wide, max 64 high, aspect preserved; no logo →
+  bold 24 sp title, 2 lines, subtle shadow. No strip behind it.
+- **Metadata row** 8 below the logo, over the fade: a white `COMING SOON` pill
+  (black bold 13), a `#3A3A3A` classification pill (white bold 13), then the
+  runtime in white and the year and first genre in grey (15), separated by spacing
+  alone. An in-library slide carries no status pill.
+- **Second line** 6 below that: a calendar icon plus the release date, white 15.
+- **Mute**: 40 × 40, radius 10, black 45 % with a 1 px white-25 % border, white
+  20 icon, 12 from the card's top and right, on a 48 dp touch target.
+- **Dots** 14 below the date, centred: white 18 × 6 active pill, grey 6 × 6
+  inactive circles, width animated over 200 ms. Above 7 slides the edge dots
+  shrink to 4 × 4.
+- **No Play / More info button, no synopsis, no eyebrow.** On a phone the card is
+  the target: tapping anywhere on it opens the slide — the title page for a title
+  the library owns, the coming-soon page for one it does not. The card is one
+  accessibility target announcing the title, its facts, its availability and its
+  position.
 
-This deliberately diverges from the task's Step 2 ("Coming soon badge + More
-info", "Play + More info") on Luther's instruction.
+TV is unchanged from the previous task: its Skyline marquee already fills and
+centre-crops its backdrop (`ContentScale.Crop`), already dissolves into its own
+sampled wash, and already shows the logo with a text fallback. Spec item 7 has no
+TV surface — TV plays no trailer, so it has no mute control.
+
 
 
 ## Verification
@@ -78,15 +96,14 @@ APK built from this branch.
 
 | # | Check | Result |
 | --- | --- | --- |
-| 1 | Hero shows the admin's list in admin order; dots/counter match the count | **Pass.** 5 dots labelled "Go to item N of 5", centred under the card; the card's own label ends "Item N of 5". The API returns **5** items. |
-| 2 | Trailer autoplays muted; mute works; backdrop-only when there is no trailer | **Pass.** Frames differ by 1.76 MB between captures (video playing); the mute control appears only once a clip is ready and flips `Unmute trailer` → `Mute trailer`; a slide with no clip shows no mute control and keeps its backdrop. |
-| 3 | Tapping a non-library slide opens coming-soon details (no "not found") | **Pass.** Tapping the card opens the title page: title, year · runtime, genres, classification, request status, overview, director. |
-| 4 | A slide the library owns opens its normal details, where Play lives | **Pass.** Slide 4 ("Verity", `availability=in_library`) carries no "Coming soon" line, and tapping the card opens the item page with Play / Favorite / Watchlist / Watched / Download. Play itself was verified in this session (`SiloPlayback: Playback player created … live instance count = 1`, frames differ by 757 KB). |
-| 5 | Hero flag off → no hero, no broken row | **Not verified on device** (needs an admin change). Covered by unit test `anEmptyFeaturedRowIsNotAHeroAndNoRowIsLeftBehind`; with no flagged row `splitFeatured()` returns null and the feed is untouched. |
-| 6 | All other rows, library pages and playback unchanged | **Pass.** Continue Watching (with progress), Trending this week and the bottom nav render as before. |
-| 7 | TV: full remote/D-pad navigation through the hero and into the rows | **Not verified.** No TV AVD has a signed-in session. |
-| 8 | Build and existing tests pass; warnings/lint not above baseline | **Pass.** Both debug APKs build. `shared` 2239 tests 0 failures; `androidApp` 953 tests 7 failures; `androidTvApp` 1348 tests 1 failure — all 8 pre-existing and unrelated (see below). No new compiler warnings. |
-| 9 | silo-server `git status` unchanged | **Pass.** Clean, no stashes, HEAD still `d92f6b70f`. |
+| 1 | Side-by-side of the new hero next to the Prime reference, saved as `docs/design/hero-after.png` | **Partial.** `docs/design/hero-after.png` is saved (a settled frame with the trailer live). Neither `hero-reference-prime.png` nor `hero-current-android.png` was in the repo, so no side-by-side could be composed; `hero-current-android.png` was generated from the previous commit so the pair exists to compare. |
+| 2 | A letterboxed trailer fills the card with no black bars | **Pass.** Row samples across the card's top at y=416–520 return mean luminance 100–108 with min 16 / max 245: image content, not a bar. `RESIZE_MODE_ZOOM` on the trailer and `ContentScale.Crop` on the backdrop. |
+| 3 | No visible bottom edge on the card in dark mode | **Pass.** Before the feather the card's last row measured 17 and the page below it 23 — a hard 6/255 step. After the feather the ramp is 17→18→19→21→22→23 across 60 px, ≤2 levels per row. |
+| 4 | Logo shows for items that have one; text fallback for one that does not | **Pass.** "Verity" renders its clear logo (cursive script); "Heart of the Beast", "The Beast" and "Other Mommy" render the bold 24 sp text fallback. |
+| 5 | Mute button fully inside the card and toggles | **Pass.** The icon node sits at [1170,481][1230,541], putting the 40 dp control exactly 12 dp inside the card's top and right on a 48 dp touch target; tapping flips `Unmute trailer` → `Mute trailer`. |
+| 6 | Dots and swipe behave as in spec items 8–9 | **Pass.** Five dots labelled "Go to item N of 5", centred 14 below the date, the active one the wider white pill. An explicit `input swipe` moved the carousel from "Item 5 of 5" to "Item 2 of 5", and the outgoing trailer's player is torn down (logcat shows it released as the next one starts). |
+| 7 | Build + existing tests pass; warnings/lint not above baseline | **Pass.** Both debug APKs build. `shared` 2240 tests 0 failures; `androidApp` 953 tests 7 failures; `androidTvApp` 1348 tests 1 failure — all 8 pre-existing and unrelated (see below). No new compiler warnings. |
+| 8 | silo-server `git status` unchanged | **Pass.** Clean, no stashes, HEAD still `d92f6b70f`. |
 
 ### Pre-existing failures (not caused by this change)
 
@@ -105,6 +122,24 @@ Proven by stashing this work and re-running the same tests on pristine `HEAD`:
   left/right moves through it and the marquee + ambient backdrop follow focus.
   What was added is the `COMING SOON · <date>` badge and the Select fix. TV
   trailer playback and a dedicated TV hero were not implemented.
+- **Neither reference image was in the repo.** `docs/design/hero-reference-prime.png`
+  and `docs/design/hero-current-android.png` did not exist, so the written spec
+  was treated as authoritative (as the task allows) and `hero-current-android.png`
+  was generated from the previous commit for comparison.
+- **The card's bottom needs a 20 dp feather.** The spec's fade lands on
+  `SiloPageBackground` (`#111111`), but the page then lays its own washes over
+  that base, so the page renders about 6 levels lighter where the card ends — a
+  measurable hard step. The feather carries the card's colour into the page so
+  the step becomes a ramp. Matching the page exactly would mean reproducing
+  `siloPageBackdrop`'s radial highlight, whose position moves as Home scrolls, so
+  the feather is the robust answer rather than a fixed colour.
+- **The dot-overflow threshold is unspecified.** The spec gives the 4 × 4 edge-dot
+  size but not how many slides trigger it; 7 was taken as the literal reading. The
+  live row holds 5 slides, so the overflow path is implemented but not exercised
+  by current data.
+- **Tablet width is not verified.** The 720 dp cap and centring are implemented
+  but no tablet AVD was run.
+
 - **`hero_video_url` arrives site-relative.** The server's `artworkurl` resolver
   returns `/api/v2/artwork/...`, which a browser resolves against its origin and
   a player cannot — ExoPlayer tried to open it as a local file and failed with
@@ -129,15 +164,22 @@ Proven by stashing this work and re-running the same tests on pristine `HEAD`:
    phone this changes a previously ordinary row into a hero, so a flagged library
    row would now look like a hero rather than a poster row. Say the word if the
    hero should be limited to `section_type = anticipated`.
-3. **TV scope.** The spec asks for a TV hero across the top with the trailer and
-   Play/Pause toggling it. TV keeps its focus marquee today. Do you want a
-   dedicated TV hero carousel with trailer playback as a follow-up?
-4. **The phone hero has no call to action.** Per your instruction the phone
+3. **TV scope.** This task's spec says to keep the TV layout and apply only items
+   2, 3, 4 and 7 there. Items 2 (fill/centre-crop), 3 (dissolve into its wash) and
+   4 (logo with text fallback) are already how the TV marquee behaves, and item 7
+   has no TV surface because TV plays no trailer and so has no mute control — so
+   TV was left untouched. The earlier task asked for a TV hero with the trailer
+   and Play/Pause toggling it; that is still not built. Do you want it as a
+   follow-up?
+4. **Dot overflow threshold.** The spec gives the 4 × 4 edge-dot size but not how
+   many slides trigger it. I used 7. If you have a number in mind (Prime's looks
+   like 5), say so and I will change the constant.
+5. **The phone hero has no call to action.** Per your instruction the phone
    hero has no Play / More info button and no synopsis — the card is the target.
-   The task's Step 2 asked for "Coming soon badge + More info" and "Play + More
-   info"; this build follows your direction instead. Say the word if you want the
-   buttons back for an in-library slide.
-5. **No pause control on phone.** Prime's mobile hero has only the mute toggle,
+   The earlier task's Step 2 asked for "Coming soon badge + More info" and
+   "Play + More info"; this build follows your direction instead. Say the word if
+   you want the buttons back for an in-library slide.
+6. **No pause control on phone.** Prime's mobile hero has only the mute toggle,
    so the pause button is gone. Auto-advance still stops off screen, in the
    background, on battery saver and under reduce-motion.
 
