@@ -74,3 +74,11 @@ fun formatComingSoonDate(releaseDate: String?): String? {
  */
 val SectionItem.comingSoonLabel: String
     get() = formatComingSoonDate(releaseDate)?.let { "Coming soon · $it" } ?: "Coming soon"
+
+/**
+ * Just the release date (`Dec 16, 2026`) for a hero that already says "Coming
+ * soon" in a chip of its own and needs only the date beside it. Null for an
+ * ordinary card and for a coming-soon slide with no usable date.
+ */
+val SectionItem.comingSoonDateLabel: String?
+    get() = if (isComingSoon) formatComingSoonDate(releaseDate) else null

@@ -29,7 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeOff
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
-import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,6 +76,7 @@ import org.siloserver.silo.common.ui.components.ThumbhashImage
 import org.siloserver.silo.common.ui.marquee.rememberReduceMotion
 import org.siloserver.silo.model.section.ResolvedSection
 import org.siloserver.silo.model.section.SectionItem
+import org.siloserver.silo.model.section.comingSoonDateLabel
 import org.siloserver.silo.model.section.comingSoonLabel
 import org.siloserver.silo.model.section.heroArtworkThumbhash
 import org.siloserver.silo.model.section.heroArtworkUrl
@@ -441,7 +442,7 @@ private fun HeroCardTitle(item: SectionItem, modifier: Modifier = Modifier) {
             thumbhash = null,
             // The card itself is announced; the art is decorative here.
             contentDescription = null,
-            modifier = modifier.heightIn(min = 32.dp, max = 76.dp).width(210.dp),
+            modifier = modifier.heightIn(min = 40.dp, max = 88.dp).width(240.dp),
             contentScale = ContentScale.Fit,
             alignment = Alignment.CenterStart,
             transparent = true,
@@ -476,40 +477,55 @@ private fun HeroSlideMeta(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Prime leads with a white status chip, then the classification.
+            if (item.isComingSoon) HeroStatusChip("Coming soon")
             heroRatingChip(item)?.let { rating -> HeroChip(rating) }
-            val metadata = heroMetadataLine(item)
-            if (metadata.isNotEmpty()) {
-                Text(
-                    text = metadata,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.72f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-
-        if (item.isComingSoon) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
+                heroMetadataParts(item).forEachIndexed { index, part ->
+                    if (index > 0) {
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = 0.45f),
+                        )
+                    }
+                    Text(
+                        text = part.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = if (part.emphasised) 0.95f else 0.6f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+
+        // The date the chip leaves out. Prime's second line is its service line;
+        // ours is when the title arrives.
+        item.comingSoonDateLabel?.let { date ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Icon(
-                    imageVector = Icons.Outlined.Schedule,
+                    imageVector = Icons.Outlined.CalendarToday,
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.92f),
-                    modifier = Modifier.size(16.dp),
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = item.comingSoonLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.92f),
+                    text = date,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -522,23 +538,41 @@ private fun HeroSlideMeta(
             onSelectPage = onSelectPage,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(top = 2.dp),
+                .padding(top = 4.dp),
         )
     }
 }
 
-/** A classification pill, like the rating chip on Prime's hero. */
+/** The white status chip Prime leads its hero metadata with (`NEW MOVIE`). */
+@Composable
+private fun HeroStatusChip(label: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color.White)
+            .padding(horizontal = 7.dp, vertical = 3.dp),
+    ) {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = Color.Black,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+/** The classification pill beside the status chip (`M`). */
 @Composable
 private fun HeroChip(label: String) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(Color.White.copy(alpha = 0.16f))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+            .background(Color.White.copy(alpha = 0.22f))
+            .padding(horizontal = 7.dp, vertical = 3.dp),
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelLarge,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
         )
@@ -557,13 +591,13 @@ private fun HeroPageDots(
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         repeat(count) { index ->
             val active = index == position
             Box(
                 modifier = Modifier
-                    .size(width = if (active) 18.dp else 6.dp, height = 6.dp)
+                    .size(width = if (active) 22.dp else 8.dp, height = 8.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = if (active) 0.95f else 0.4f))
                     .semantics { contentDescription = "Go to item ${index + 1} of $count" }
@@ -592,21 +626,35 @@ internal fun heroAccessibilityLabel(
 }
 
 /**
- * `1h 40m · 2026 · Action` — the facts Prime's hero puts beside its rating chip,
- * from the card's own fields. An episode card leads with its position instead of
- * the year, and the classification is the chip, not this line.
+ * One fact in the hero's metadata row. Prime renders the runtime bright and the
+ * year and genre dimmer beside it, so each part carries its own emphasis.
  */
-internal fun heroMetadataLine(item: SectionItem): String {
-    val parts = mutableListOf<String>()
+internal data class HeroMetaPart(val label: String, val emphasised: Boolean)
+
+/**
+ * The facts Prime's hero puts beside its chips, from the card's own fields: the
+ * runtime, then the year and genre. An episode card leads with its position
+ * instead of the year. The classification is a chip, not a part.
+ */
+internal fun heroMetadataParts(item: SectionItem): List<HeroMetaPart> {
+    val parts = mutableListOf<HeroMetaPart>()
     val isEpisode = item.type.equals("episode", ignoreCase = true)
     if (isEpisode && item.seasonNumber != null && item.episodeNumber != null) {
-        parts += "S${item.seasonNumber} · E${item.episodeNumber}"
+        parts += HeroMetaPart("S${item.seasonNumber} · E${item.episodeNumber}", emphasised = false)
     }
-    heroRuntimeLabel(item.runtime)?.let { parts += it }
-    if (!isEpisode && item.year > 0) parts += item.year.toString()
-    if (!isEpisode) item.genres.firstOrNull { it.isNotBlank() }?.let { parts += it }
-    return parts.joinToString(" · ")
+    heroRuntimeLabel(item.runtime)?.let { parts += HeroMetaPart(it, emphasised = true) }
+    if (!isEpisode && item.year > 0) {
+        parts += HeroMetaPart(item.year.toString(), emphasised = false)
+    }
+    if (!isEpisode) {
+        item.genres.firstOrNull { it.isNotBlank() }?.let { parts += HeroMetaPart(it, emphasised = false) }
+    }
+    return parts
 }
+
+/** [heroMetadataParts] as the one line a screen reader or a test reads. */
+internal fun heroMetadataLine(item: SectionItem): String =
+    heroMetadataParts(item).joinToString(" · ") { it.label }
 
 /** The classification chip beside [heroMetadataLine]; null when the card carries none. */
 internal fun heroRatingChip(item: SectionItem): String? =

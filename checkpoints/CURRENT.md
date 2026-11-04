@@ -54,9 +54,13 @@ the phone hero is:
   full-bleed frame;
 - the backdrop with the muted trailer playing over it, the title logo (or title
   text) at the card's bottom-left, a mute toggle at its top-right;
-- beneath the card, one line of chips and metadata (`[PG-13] 1h 41m · 2026`),
-  then the availability line (`Coming soon · Sep 19, 2026`) for a title the
-  library does not own, then the page dots, centred;
+- beneath the card, a white status chip (`COMING SOON`, black bold text) and the
+  classification chip (`PG-13`) beside the runtime, year and genre — runtime
+  bright, year and genre dimmer, as Prime renders them;
+- then the release date on its own line (`Sep 19, 2026`, with a calendar icon)
+  for a title the library does not own — Prime's second line is its service line
+  (`Included with Prime`), ours is when the title arrives;
+- then the page dots, centred;
 - **no Play / More info button, no synopsis, no "FEATURED — No. 0N" eyebrow.**
   On a phone the card is the target: tapping anywhere on it opens the slide —
   the title page for a title the library owns, the coming-soon page for one it

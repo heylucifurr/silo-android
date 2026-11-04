@@ -116,6 +116,14 @@ class AnticipatedSlideTest {
     }
 
     @Test
+    fun theDateAloneIsOfferedForAHeroThatAlreadySaysComingSoon() {
+        assertEquals("Dec 16, 2026", anticipated("ext:movie-1", ",\"release_date\":\"2026-12-16\"").comingSoonDateLabel)
+        // No usable date, and an ordinary card, both offer nothing.
+        assertNull(anticipated("ext:movie-1", "").comingSoonDateLabel)
+        assertNull(ordinary("movie:1").comingSoonDateLabel)
+    }
+
+    @Test
     fun aComingSoonSlideWithoutATmdbIdHasNoDetailTarget() {
         val noId = decodeItem(
             "{\"content_id\":\"ext:movie-1\",\"type\":\"movie\",\"title\":\"X\"," +
