@@ -47,6 +47,25 @@ data class SectionItem(
     @SerialName("season_poster_url") val seasonPosterUrl: String? = null,
     @SerialName("season_poster_thumbhash") val seasonPosterThumbhash: String? = null,
     @SerialName("logo_url") val logoUrl: String? = null,
+    /**
+     * On a curated "Most anticipated" hero slide: `in_library`, `unreleased` or
+     * `released_unowned`. Absent on every other card, which is how a client
+     * tells a coming-soon slide from an ordinary library item.
+     */
+    val availability: String? = null,
+    /** On an anticipated slide the library lacks: its TMDB id. Absent elsewhere. */
+    @SerialName("tmdb_id") val tmdbId: Int? = null,
+    /** Calendar release date (`YYYY-MM-DD`). Carried by anticipated slides. */
+    @SerialName("release_date") val releaseDate: String? = null,
+    /**
+     * A short clip of the title's trailer, served by silo-server, for a hero to
+     * autoplay behind its backdrop. Absent when this server has no clip.
+     */
+    @SerialName("hero_video_url") val heroVideoUrl: String? = null,
+    /** On an anticipated slide the library lacks: whether it is on the viewer's watchlist. */
+    @SerialName("in_watchlist") val inWatchlist: Boolean? = null,
+    /** On an anticipated slide the library lacks: whether the viewer may request it. */
+    val requestable: Boolean? = null,
     @SerialName("user_state") val userState: MediaItemUserState? = null,
     /** This profile's metadata language while the card's description is not available in it yet. */
     @SerialName("pending_translation_language") val pendingTranslationLanguage: String? = null,

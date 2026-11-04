@@ -1229,6 +1229,7 @@ fun TvMainShell(
                     TvHomeScreen(
                         viewModel = homeViewModel,
                         onItemClick = openHomeItemDetail,
+                        onComingSoonClick = openRequestDetail,
                         onItemDetailSelection = openHomeItemDetailSelection,
                         onPlayItem = onPlayItem,
                         onSeeAll = {
@@ -1257,6 +1258,7 @@ fun TvMainShell(
                     TvHomeScreen(
                         viewModel = homeViewModel,
                         onItemClick = openHomeItemDetail,
+                        onComingSoonClick = openRequestDetail,
                         onItemDetailSelection = openHomeItemDetailSelection,
                         onPlayItem = onPlayItem,
                         onSeeAll = {

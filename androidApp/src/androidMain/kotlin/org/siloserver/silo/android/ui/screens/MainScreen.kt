@@ -407,6 +407,9 @@ fun MainScreen(
                             onItemClick = { contentId ->
                                 navController.navigate(Route.ItemDetail(contentId).route)
                             },
+                            onComingSoonClick = { mediaType, tmdbId ->
+                                navController.navigate(Route.RequestDetail(mediaType, tmdbId).route)
+                            },
                             onContinueWatchingItemClick = { item ->
                                 navController.navigate(continueWatchingDetailRoute(item))
                             },

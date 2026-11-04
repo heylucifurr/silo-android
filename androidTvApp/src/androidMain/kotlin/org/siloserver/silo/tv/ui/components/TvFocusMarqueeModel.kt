@@ -15,6 +15,8 @@ import org.siloserver.silo.model.catalog.seriesHeroBackdrop
 import org.siloserver.silo.common.cards.LocalEpisodeSpoilerPrefs
 import org.siloserver.silo.model.section.ResolvedSection
 import org.siloserver.silo.model.section.SectionItem
+import org.siloserver.silo.model.section.comingSoonLabel
+import org.siloserver.silo.model.section.isComingSoon
 import org.siloserver.silo.model.settings.EpisodeSpoilerPrefs
 import org.siloserver.silo.model.settings.EpisodeSpoilers
 import kotlinx.coroutines.delay
@@ -159,11 +161,16 @@ data class TvMarqueeContent(
                 item.genres.firstOrNull { it.isNotBlank() }?.let { meta += TvHeroFactToken.TextToken(it) }
             }
 
-            val badges = item.contentRating
-                ?.takeIf { it.isNotBlank() }
-                ?.uppercase(Locale.US)
-                ?.let(::listOf)
-                .orEmpty()
+            // A curated "Most anticipated" slide the library does not own reads
+            // as Coming soon with its release date, ahead of the classification
+            // badge — the same offer the phone hero and the web hero make.
+            val badges = buildList {
+                if (item.isComingSoon) add(item.comingSoonLabel.uppercase(Locale.US))
+                item.contentRating
+                    ?.takeIf { it.isNotBlank() }
+                    ?.uppercase(Locale.US)
+                    ?.let(::add)
+            }
 
             // An episode's hero is its series backdrop when the card carries
             // one; it is never a still, so spoiler protection keeps it.

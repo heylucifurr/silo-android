@@ -39,6 +39,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,6 +88,8 @@ import org.siloserver.silo.common.ui.components.avatarRef
 import org.siloserver.silo.model.catalog.isAudiobookItemType
 import org.siloserver.silo.model.profile.Profile
 import org.siloserver.silo.model.section.SectionItem
+import org.siloserver.silo.model.section.anticipatedDetailTarget
+import org.siloserver.silo.model.section.splitFeatured
 import org.siloserver.silo.viewmodel.HomeViewModel
 import org.siloserver.silo.android.ui.navigation.LocalBottomChromeInset
 import org.siloserver.silo.android.ui.navigation.LocalHeroSourceHandoff
@@ -124,6 +127,12 @@ fun HomeScreen(
     onItemClick: (String) -> Unit,
     onContinueWatchingItemClick: (SectionItem) -> Unit,
     onPlayClick: (String, Double?) -> Unit,
+    /**
+     * Opens the coming-soon detail page for a curated "Most anticipated" slide
+     * the library does not own yet. Such a card has no catalog item, so it must
+     * never go through [onItemClick] — that is what produced "not found".
+     */
+    onComingSoonClick: (mediaType: String, tmdbId: Int) -> Unit = { _, _ -> },
     /** Opens a row's full page ("Explore all"). */
     onExploreSection: ((org.siloserver.silo.model.section.ResolvedSection) -> Unit)? = null,
     onBottomNavMinimizedChange: (Boolean) -> Unit = {},
@@ -150,8 +159,10 @@ fun HomeScreen(
     val sections = state.sections
     val profileScopeId = activeEntry?.profileId ?: activeProfile?.id
     val populatedServerSections = remember(sections) { sections.filter { it.items.isNotEmpty() } }
-    // No hero billboard on phone (matches iOS): a `featured` section is just
-    // another row, rendered in the order the server configured it.
+    // A `featured` row is the administrator's hero (admin → Sections → Hero
+    // banner). It renders as the hero carousel at the top of Home and is
+    // filtered out of the rows below, matching the web hero and the TV marquee.
+    // No flagged row → `hero` is null and the feed is exactly what it was.
     val regularSections = remember(
         sections,
         preferenceRevision,
@@ -159,6 +170,18 @@ fun HomeScreen(
         profileScopeId,
     ) {
         sectionPreferences.arrangedSections(sections, profileId = profileScopeId)
+    }
+    val featuredSplit = remember(regularSections) { regularSections.splitFeatured() }
+    val hero = featuredSplit.featured
+    val feedSections = featuredSplit.rest
+    // Every curated slide the library does not own, keyed by the content id the
+    // card carries. A tap on one must open the coming-soon page, never the
+    // catalog item page it has no row for.
+    val anticipatedTargets = remember(regularSections) {
+        regularSections
+            .flatMap { it.items }
+            .mapNotNull { item -> item.anticipatedDetailTarget?.let { item.contentId to it } }
+            .toMap()
     }
     val context = LocalContext.current
     val catalogRepository: CatalogRepository = koinInject()
@@ -273,7 +296,14 @@ fun HomeScreen(
     }
 
     val listState = rememberLazyListState()
+    // The hero is the feed's second item (the chrome runway is first), so it is
+    // on screen while the list still sits at or just past the top. Off screen it
+    // pauses: no trailer and no auto-advance behind the viewer's back.
+    val heroOnScreen by remember(hero?.id) {
+        derivedStateOf { hero != null && listState.firstVisibleItemIndex <= 1 }
+    }
     val currentDiagnosticsSections by rememberUpdatedState(regularSections)
+    val currentHeroPresent by rememberUpdatedState(hero != null)
     val currentBottomNavCallback by rememberUpdatedState(onBottomNavMinimizedChange)
     LaunchedEffect(listState) {
         var previousIndex = listState.firstVisibleItemIndex
@@ -304,11 +334,16 @@ fun HomeScreen(
                 val currentSections = currentDiagnosticsSections
                 val sectionCount = currentSections.size
                 val firstVisibleItem = listState.firstVisibleItemIndex
-                val visibleRowOrdinal = (firstVisibleItem - 1).takeIf(currentSections.indices::contains)
+                // The feed is [chrome runway, hero?, rows...]. The ordinal is
+                // measured from the first ROW, so a hero shifts it by one.
+                val rowBase = if (currentHeroPresent) 2 else 1
+                val visibleRowOrdinal =
+                    (firstVisibleItem - rowBase).takeIf(currentSections.indices::contains)
                 val region = when {
                     sectionCount == 0 -> DiagnosticsHomeScrollRegion.UNKNOWN
-                    firstVisibleItem <= 1 -> DiagnosticsHomeScrollRegion.TOP
-                    firstVisibleItem >= sectionCount -> DiagnosticsHomeScrollRegion.END
+                    firstVisibleItem <= rowBase -> DiagnosticsHomeScrollRegion.TOP
+                    firstVisibleItem >= rowBase + sectionCount - 1 ->
+                        DiagnosticsHomeScrollRegion.END
                     else -> DiagnosticsHomeScrollRegion.CONTENT
                 }
                 DiagnosticsHomeLogger.scroll(
@@ -385,8 +420,28 @@ fun HomeScreen(
                             }
                         }
 
+                        // The administrator's hero row, when one is flagged. It
+                        // is not repeated in the feed below.
+                        hero?.let { heroSection ->
+                            item(key = "homeHero-${heroSection.id}") {
+                                HomeHeroCarousel(
+                                    section = heroSection,
+                                    onItemClick = { item -> onItemClick(item.contentId) },
+                                    onComingSoonClick = { item ->
+                                        item.anticipatedDetailTarget?.let { (type, tmdbId) ->
+                                            onComingSoonClick(type, tmdbId)
+                                        }
+                                    },
+                                    onPlayClick = { item ->
+                                        onPlayClick(item.contentId, item.positionSeconds)
+                                    },
+                                    isOnScreen = heroOnScreen,
+                                )
+                            }
+                        }
+
                         items(
-                            items = regularSections,
+                            items = feedSections,
                             key = { it.id },
                             contentType = { "section-row" },
                         ) { section ->
@@ -395,7 +450,15 @@ fun HomeScreen(
                                     section.sectionType == "in_progress"
                             HomeSectionRow(
                                 section = section,
-                                onItemClick = { contentId ->
+                                onItemClick = itemClick@ { contentId ->
+                                    // A curated title the library lacks has no
+                                    // catalog row: open its coming-soon page
+                                    // rather than the item page that 404s.
+                                    val anticipated = anticipatedTargets[contentId]
+                                    if (anticipated != null) {
+                                        onComingSoonClick(anticipated.first, anticipated.second)
+                                        return@itemClick
+                                    }
                                     val item = section.items.firstOrNull { it.contentId == contentId }
                                     val seriesId = item
                                         ?.takeIf { it.type.equals("episode", ignoreCase = true) }

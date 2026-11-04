@@ -31,6 +31,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.siloserver.silo.model.section.ResolvedSection
 import org.siloserver.silo.model.section.SectionItem
+import org.siloserver.silo.model.section.anticipatedDetailTarget
 import org.siloserver.silo.tv.data.preferences.TvHomeSectionPreferences
 import org.siloserver.silo.tv.ui.components.TvErrorScreen
 import org.siloserver.silo.tv.ui.components.TvLoadingScreen
@@ -59,6 +60,12 @@ internal fun shouldShowHomeEmptyState(
 @Composable
 fun TvHomeScreen(
     onItemClick: (contentId: String) -> Unit,
+    /**
+     * Opens the coming-soon detail page for a curated "Most anticipated" slide
+     * the library does not own. Such a card has no catalog item, so it must not
+     * go through [onItemClick] — that produced "not found".
+     */
+    onComingSoonClick: (mediaType: String, tmdbId: Int) -> Unit = { _, _ -> },
     onItemDetailSelection: (
         contentId: String,
         seasonNumber: Int?,
@@ -142,6 +149,7 @@ fun TvHomeScreen(
                 sections = visibleSections,
                 sectionsFullyResolved = state.sectionsFullyResolved,
                 onItemClick = onItemClick,
+                onComingSoonClick = onComingSoonClick,
                 onItemDetailSelection = onItemDetailSelection,
                 onPlayItem = onPlayItem,
                 onSeeAll = onSeeAll,
@@ -232,6 +240,7 @@ private fun TvHomeEmptyState(
 private fun TvHomeContent(
     sections: List<ResolvedSection>,
     onItemClick: (String) -> Unit,
+    onComingSoonClick: (String, Int) -> Unit = { _, _ -> },
     onItemDetailSelection: (String, Int?, String?) -> Unit,
     onPlayItem: (contentId: String, type: String?, resumePositionSeconds: Double?) -> Unit,
     onSeeAll: () -> Unit = {},
@@ -251,6 +260,23 @@ private fun TvHomeContent(
     sectionsFullyResolved: Boolean = true,
     onMarqueeTranslated: () -> Unit = {},
 ) {
+    // A curated "Most anticipated" card the library does not own carries a TMDB
+    // id and no catalog row. Select must open its coming-soon page; the catalog
+    // item page it has no row for is what produced "not found".
+    val anticipatedTargets = remember(sections) {
+        sections
+            .flatMap { it.items }
+            .mapNotNull { item -> item.anticipatedDetailTarget?.let { item.contentId to it } }
+            .toMap()
+    }
+    val onCardClick: (String) -> Unit = { contentId ->
+        val anticipated = anticipatedTargets[contentId]
+        if (anticipated != null) {
+            onComingSoonClick(anticipated.first, anticipated.second)
+        } else {
+            onItemClick(contentId)
+        }
+    }
     TvSkylineSectionFeed(
         onMarqueeTranslated = onMarqueeTranslated,
         surfaceKey = "home",
@@ -259,7 +285,7 @@ private fun TvHomeContent(
         contentVerticalOffset = 28.dp,
         sections = sections,
         sectionsComplete = sectionsFullyResolved,
-        onItemClick = onItemClick,
+        onItemClick = onCardClick,
         focusRequest = focusRequest,
         detailReturnFocusRequest = detailReturnFocusRequest,
         detailReturnCardFocusRequester = detailReturnCardFocusRequester,
