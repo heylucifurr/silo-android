@@ -49,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -217,6 +218,13 @@ fun HomeHeroCarousel(
         value = runCatching { tokenManager.getServerUrl() }.getOrNull()
     }
 
+    // Sound is the viewer's choice for the whole carousel, not per slide. An
+    // unmute has to survive the auto-advance: held per slide, the hero fell
+    // silent again a few seconds after someone asked for sound, which reads as
+    // "the trailer has no audio". It still starts muted, which is the only state
+    // a clip is allowed to autoplay in.
+    var clipMuted by rememberSaveable { mutableStateOf(true) }
+
     // Reduce motion, battery saver, the background and an off-screen hero all
     // stop the trailer and the auto-advance. None of them blocks a swipe.
     val advancing = isOnScreen && appResumed && !powerSaveMode && !reduceMotion && slides.size > 1
@@ -280,6 +288,8 @@ fun HomeHeroCarousel(
                     // and the incoming one starts from its own first frame.
                     active = page == pagerState.currentPage,
                     trailerPlaying = advancing && page == pagerState.currentPage,
+                    muted = clipMuted,
+                    onToggleMute = { clipMuted = !clipMuted },
                 )
             }
 
@@ -385,9 +395,11 @@ private fun HeroSlideMedia(
     /** Whether this is the slide on screen. Only it may hold a decoder. */
     active: Boolean,
     trailerPlaying: Boolean,
+    /** The carousel's sound choice, shared by every slide. */
+    muted: Boolean,
+    onToggleMute: () -> Unit,
 ) {
     var clipFailed by remember(item.contentId) { mutableStateOf(false) }
-    var clipMuted by remember(item.contentId) { mutableStateOf(true) }
     // The backdrop stays visible until the trailer has a frame to show, so the
     // card never flashes black while the clip buffers.
     var trailerPainted by remember(item.contentId) { mutableStateOf(false) }
@@ -413,7 +425,7 @@ private fun HeroSlideMedia(
             HeroTrailerLayer(
                 clipUrl = playableClipUrl,
                 playing = trailerPlaying,
-                muted = clipMuted,
+                muted = muted,
                 onFirstFrame = { trailerPainted = true },
                 onUnavailable = { clipFailed = true },
                 modifier = Modifier.fillMaxSize().alpha(trailerAlpha),
@@ -421,8 +433,8 @@ private fun HeroSlideMedia(
         }
         if (playableClipUrl != null && trailerPainted) {
             HeroMuteToggle(
-                muted = clipMuted,
-                onToggle = { clipMuted = !clipMuted },
+                muted = muted,
+                onToggle = onToggleMute,
                 // The 48dp touch target centres the 40dp control, so an 8dp
                 // padding puts the control 12dp from the card's top and right.
                 modifier = Modifier

@@ -72,7 +72,11 @@ was not in the repo, so the written spec was treated as authoritative):
   alone. An in-library slide carries no status pill.
 - **Second line** 6 below that: a calendar icon plus the release date, white 15.
 - **Mute**: 40 × 40, radius 10, black 45 % with a 1 px white-25 % border, white
-  20 icon, 12 from the card's top and right, on a 48 dp touch target.
+  20 icon, 12 from the card's top and right, on a 48 dp touch target. The sound
+  choice belongs to the carousel, not the slide: an unmute survives the
+  auto-advance, so the hero does not fall silent again a few seconds after
+  someone asks for sound. It still starts muted, the only state a clip may
+  autoplay in.
 - **Dots** 14 below the date, centred: white 18 × 6 active pill, grey 6 × 6
   inactive circles, width animated over 200 ms. Above 7 slides the edge dots
   shrink to 4 × 4.
@@ -139,6 +143,14 @@ Proven by stashing this work and re-running the same tests on pristine `HEAD`:
   by current data.
 - **Tablet width is not verified.** The 720 dp cap and centring are implemented
   but no tablet AVD was run.
+- **Trailer audio.** The clip does carry audio (the server encodes AAC 128 k
+  stereo) and the mute control works: `dumpsys media.audio_flinger` shows the
+  app's active track at `-inf dB` while muted and `0 dB` left/right once
+  unmuted, with `PortMuted false`. The silence was the deliberate muted autoplay
+  plus the per-slide mute state, now fixed. Android 16 also logs
+  `AudioHardening background playback would be muted for me.weflix` (level
+  partial, and full once); no mute was actually applied, but it is worth
+  remembering if audio ever goes silent *while unmuted* on a real device.
 
 - **`hero_video_url` arrives site-relative.** The server's `artworkurl` resolver
   returns `/api/v2/artwork/...`, which a browser resolves against its origin and
